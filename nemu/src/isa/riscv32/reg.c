@@ -1,4 +1,4 @@
-/***************************************************************************************
+/**************************************************************************************
 * Copyright (c) 2014-2024 Zihao Yu, Nanjing University
 *
 * NEMU is licensed under Mulan PSL v2.
@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include <isa.h>
+#include <assert.h>
 #include "local-include/reg.h"
 
 const char *regs[] = {
@@ -24,8 +25,19 @@ const char *regs[] = {
 };
 
 void isa_reg_display() {
+		int regs_num=sizeof(regs)/sizeof(regs[0]);
+		if(regs_num == 0) printf(" There is no reg in this program");
+		for(int i=0;i<regs_num;i++){
+	 		printf("the %dth reg's name: %s,\tvalue:%d\n",i+1,regs[i],cpu.gpr[i]);
+		}
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
+    int regs_num=sizeof(regs)/sizeof(regs[0]);
+ 	 for(int i = 0;i< regs_num;i++){
+ 		if(s==regs[i]) {
+		*success=true;return cpu.gpr[i];}
+  	}
+  *success=false;	
   return 0;
 }

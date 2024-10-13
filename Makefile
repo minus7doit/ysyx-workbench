@@ -23,6 +23,13 @@ define git_commit
 	-@flock $(LOCK_DIR) $(MAKE) -C $(YSYX_HOME) .git_commit MSG='$(1)'
 	-@sync $(LOCK_DIR)
 endef
+count_nonempty:
+	@find nemu/ -name "*.c" -o -name "*.h" | xargs cat | grep -v '^\s*$' | wc -l
+
+count:
+	@find nemu/ -name "*.c" -o -name "*.h" | xargs wc -l
+
+
 
 .git_commit:
 	-@while (test -e .git/index.lock); do sleep 0.1; done;               `# wait for other git instances`
