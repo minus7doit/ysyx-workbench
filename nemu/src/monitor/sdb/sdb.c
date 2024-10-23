@@ -100,17 +100,18 @@ static int cmd_w(char *args){
 	  wp->result=result;
 	  strcpy(wp->expression,args);//段错误发生在这里
 	  success=true;
-	  printf("wp 's member value is NO:%d EXPR:%s and RESULT %u\n ",wp->NO,wp->expression,wp->result);
-	  if(success) 
-			  printf("Watchpoint %d set for expression\n", wp->NO);
+	  printf("wp 's member value is NO:%d EXPR:%s and RESULT %u\n",wp->NO,wp->expression,wp->result);
+//	  if(success) 
+//			  printf("Watchpoint %d set for expression\n", wp->NO);
       return 0;
   }
 static int cmd_d(char *args){
 	printf("the args is  %s",args);
 	int NO;
 	sscanf(args,"%d",&NO);
-	printf("you are trying to delete the %d th watcher\n ",NO);
     wp_delete(NO);
+	printf("NO %d watchpoint  delete successfully\n ",NO);
+
     return 0;
   }
 
