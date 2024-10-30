@@ -1,18 +1,27 @@
-CFLAGS=-Wall -g
-CC=gcc
-executable= ex1 ex3 ex4
-all: $(executable)
+# Variables
+SRC_DIR = src
+BUILD_DIR = build
+CFLAGS = -Wall #-Werror
+CC= -gcc
+# Automatically find all C source files in the src directory
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+# Generate corresponding output executable names in the build directory
+EXES = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%, $(SRCS))
 
-ex1:ex1.o
-	gcc $(CFLAGS) $< -o $@
-ex3:ex3.o
-	gcc $(CFLAGS) $< -o $@
-ex4:ex4.o
-	gcc $(CFLAGS) $< -o $@
+# Create build directory if it doesn't exist
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
-.c.o:
-	gcc $(CFLAGS) -c $< -o $@
+# Rule to build all executables
+all: $(BUILD_DIR) $(EXES)
 
+# Generic rule to compile each .c file to an executable
+$(BUILD_DIR)/%: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) $< -o $@
 
+# Clean up build files
 clean:
-	rm -f *.o executable;
+	rm -rf $(BUILD_DIR)
+
+.PHONY: all clean
+
