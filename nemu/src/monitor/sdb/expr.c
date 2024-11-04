@@ -224,7 +224,10 @@ uint32_t eval(int p,int q) {
 		  bool success_reg;
 		  if(tokens[p].type==TK_NUM)       sscanf(tokens[p].str,"%d",&value);
 		  else if(tokens[p].type==TK_HEX)  sscanf(tokens[p].str,"%x",&value);
-		  else if(tokens[p].type==TK_REG)  value=isa_reg_str2val(tokens[p].str,&success_reg);
+		  else if(tokens[p].type==TK_REG){
+				   char *str=tokens[p].str+1; 
+		 			value=isa_reg_str2val(str,&success_reg);
+					}
 		  return value;
   }
  else if (check_parentheses(p, q) == true) {
@@ -262,7 +265,7 @@ word_t expr(char *e, bool *success) {
 
 for (int i = 0; i <NR_REGEX; i++) {
 	if (tokens[i].type == '*' && (i == 0 || tokens[i - 1].type == '('||tokens[i - 1].type==TK_EQ||tokens[i - 1].type==TK_UEQ)) {
-	printf(" i=%d\n",i);
+	//printf(" i=%d\n",i);
     tokens[i].type = TK_DEREF;
   }
 }

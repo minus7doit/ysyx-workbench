@@ -52,9 +52,14 @@ static int cmd_q(char *args) {
   	return -1;
 }
 static int cmd_si(char *args){
-	uint64_t num = atoi(args);
+	//uint64_t num = atoi(args);
 	if(args == NULL) cpu_exec(1);
-	else cpu_exec(num);
+	else
+	{
+			uint64_t num = atoi(args);
+			  cpu_exec(num);
+	}
+
 	return 0;
 }
 
@@ -78,9 +83,9 @@ static int cmd_x(char *args){
 	int len = atoi(arg1);
 	uint32_t addr;
 	sscanf(arg2,"%x",&addr);
-	printf("The hexadecimal string %s is converted to %x in hexadecimal.\n", arg2, addr);
+	//printf("The hexadecimal string %s is converted to %x in hexadecimal.\n", arg2, addr);
 	for(int i=0;i<len;i++){
-	printf("the data at %x is %d\n",addr,vaddr_read(addr,4));
+	printf("the data at %x is %x\n",addr,vaddr_read(addr,4));
 	addr=addr+4;
 	}
 
@@ -89,7 +94,8 @@ static int cmd_x(char *args){
 
 static int cmd_p(char *args){
 	bool success;
-    printf("the result of the expression is %d\n",expr(args,&success));
+	uint32_t result=expr(args,&success);
+    printf("the result of the expression is dec:%d\thex:%x\n",result,result);
 	return 0;
 }
 
@@ -101,12 +107,10 @@ static int cmd_w(char *args){
 	  strcpy(wp->expression,args);//段错误发生在这里
 	  success=true;
 	  printf("wp 's member value is NO:%d EXPR:%s and RESULT %u\n",wp->NO,wp->expression,wp->result);
-//	  if(success) 
-//			  printf("Watchpoint %d set for expression\n", wp->NO);
       return 0;
   }
 static int cmd_d(char *args){
-	printf("the args is  %s",args);
+//	printf("the args is  %s",args);
 	int NO;
 	sscanf(args,"%d",&NO);
     wp_delete(NO);
@@ -162,7 +166,7 @@ static int cmd_help(char *args) {
 }
 
 void sdb_set_batch_mode() {
-  is_batch_mode = true;
+ is_batch_mode = true;
 }
 
 void sdb_mainloop() {
@@ -207,7 +211,7 @@ void sdb_mainloop() {
 void init_sdb() {
   /* Compile the regular expressions. */
   init_regex();
-//	test_expr();
+	test_expr();
   /* Initialize the watchpoint pool. */
   init_wp_pool();
 }

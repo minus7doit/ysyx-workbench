@@ -71,7 +71,8 @@ while(wp->next!=NULL){
 void wp_print(){
 	WP *ptr = head;
 	if(ptr==NULL){
-	printf("there is no watchpoint set ");
+	printf("there is no watchpoint set\n ");
+	return;
 	}
 	printf("NUM\t\tEXPR\t\tRESULT\n");
 	while(ptr!=NULL){
@@ -81,17 +82,25 @@ void wp_print(){
 }
 
 void scan_watchpoint(){
+	if(head==NULL) {
+    //printf("There is no watchpoint  be set \n ");
+//	assert(0);
+	return;
+	}
 	WP * wp = head;
 	bool success;
-	while(wp->next!=NULL){
+	while(wp!=NULL){
 		uint32_t new_res = expr(wp->expression,&success);
 		if(new_res!=wp->result)   {
-			printf(" the value of watchpoint %d has changed",wp->NO);
+			printf(" the value of watchpoint %d has changed\n",wp->NO);
 			printf("Old value: 0x%x, New value: 0x%x\n", wp->result, new_res);
 			nemu_state.state=NEMU_STOP;
 			wp->result=new_res;
 	}
+//		if(wp->next==NULL)break;
+	//	else
 		wp=wp->next;
 	}
+//printf("wp->NO is %d ",wp->NO);
 }
 

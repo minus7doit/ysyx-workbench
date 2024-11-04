@@ -36,9 +36,10 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
-  if(CONFIG_WATCHPOINT) { scan_watchpoint();}
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+  if(CONFIG_WATCHPOINT) { scan_watchpoint();}
+
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
@@ -80,7 +81,7 @@ static void execute(uint64_t n) {
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
-    IFDEF(CONFIG_DEVICE, device_update());
+	IFDEF(CONFIG_DEVICE, device_update());
   }
 }
 
@@ -107,6 +108,7 @@ void cpu_exec(uint64_t n) {
       return;
     default: nemu_state.state = NEMU_RUNNING;
   }
+
 
   uint64_t timer_start = get_time();
 
