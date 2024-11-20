@@ -54,6 +54,7 @@ always@(posedge clk)begin
 if(rst) key_cnt<=0;
 else begin
   if (ready) begin
+        if(key_cnt==0) key_cnt<=key_cnt+1;
                 if (data == 8'hF0) begin
                     if (!f0_counted) begin
                         key_cnt <= key_cnt + 1;  // 每次新检测到 F0 时计数
