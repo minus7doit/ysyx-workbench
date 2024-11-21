@@ -1,4 +1,4 @@
-MODULE= decode24
+MODULE=ysyx_24110005_NPC
 
 .PHONY:sim
 sim: waveform.vcd
