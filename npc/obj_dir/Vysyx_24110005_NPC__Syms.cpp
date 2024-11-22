@@ -1,16 +1,16 @@
 // Verilated -*- C++ -*-
 // DESCRIPTION: Verilator output: Symbol table implementation internals
 
-#include "Vencode42__Syms.h"
-#include "Vencode42.h"
-#include "Vencode42___024root.h"
+#include "Vysyx_24110005_NPC__Syms.h"
+#include "Vysyx_24110005_NPC.h"
+#include "Vysyx_24110005_NPC___024root.h"
 
 // FUNCTIONS
-Vencode42__Syms::~Vencode42__Syms()
+Vysyx_24110005_NPC__Syms::~Vysyx_24110005_NPC__Syms()
 {
 }
 
-Vencode42__Syms::Vencode42__Syms(VerilatedContext* contextp, const char* namep, Vencode42* modelp)
+Vysyx_24110005_NPC__Syms::Vysyx_24110005_NPC__Syms(VerilatedContext* contextp, const char* namep, Vysyx_24110005_NPC* modelp)
     : VerilatedSyms{contextp}
     // Setup internal state of the Syms class
     , __Vm_modelp{modelp}

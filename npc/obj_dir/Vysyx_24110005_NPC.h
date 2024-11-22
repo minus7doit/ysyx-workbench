@@ -5,29 +5,28 @@
 // The class here is then constructed to instantiate the design.
 // See the Verilator manual for examples.
 
-#ifndef VERILATED_VENCODE42_H_
-#define VERILATED_VENCODE42_H_  // guard
+#ifndef VERILATED_VYSYX_24110005_NPC_H_
+#define VERILATED_VYSYX_24110005_NPC_H_  // guard
 
 #include "verilated.h"
 
-class Vencode42__Syms;
-class Vencode42___024root;
+class Vysyx_24110005_NPC__Syms;
+class Vysyx_24110005_NPC___024root;
 class VerilatedVcdC;
 
 // This class is the main interface to the Verilated model
-class Vencode42 VL_NOT_FINAL : public VerilatedModel {
+class Vysyx_24110005_NPC VL_NOT_FINAL : public VerilatedModel {
   private:
     // Symbol table holding complete model state (owned by this class)
-    Vencode42__Syms* const vlSymsp;
+    Vysyx_24110005_NPC__Syms* const vlSymsp;
 
   public:
 
     // PORTS
     // The application code writes and reads these signals to
     // propagate new values into/out from the Verilated model.
-    VL_IN8(&en,0,0);
-    VL_IN8(&x,3,0);
-    VL_OUT8(&y,1,0);
+    VL_IN8(&clk,0,0);
+    VL_IN8(&rst,0,0);
 
     // CELLS
     // Public to allow access to /* verilator public */ items.
@@ -35,19 +34,19 @@ class Vencode42 VL_NOT_FINAL : public VerilatedModel {
 
     // Root instance pointer to allow access to model internals,
     // including inlined /* verilator public_flat_* */ items.
-    Vencode42___024root* const rootp;
+    Vysyx_24110005_NPC___024root* const rootp;
 
     // CONSTRUCTORS
     /// Construct the model; called by application code
     /// If contextp is null, then the model will use the default global context
     /// If name is "", then makes a wrapper with a
     /// single model invisible with respect to DPI scope names.
-    explicit Vencode42(VerilatedContext* contextp, const char* name = "TOP");
-    explicit Vencode42(const char* name = "TOP");
+    explicit Vysyx_24110005_NPC(VerilatedContext* contextp, const char* name = "TOP");
+    explicit Vysyx_24110005_NPC(const char* name = "TOP");
     /// Destroy the model; called (often implicitly) by application code
-    virtual ~Vencode42();
+    virtual ~Vysyx_24110005_NPC();
   private:
-    VL_UNCOPYABLE(Vencode42);  ///< Copying not allowed
+    VL_UNCOPYABLE(Vysyx_24110005_NPC);  ///< Copying not allowed
 
   public:
     // API METHODS

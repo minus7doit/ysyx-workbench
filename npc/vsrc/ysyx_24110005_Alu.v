@@ -1,32 +1,34 @@
-module ysyx_24110005_Alu#(
+/* verilator lint_off UNUSEDSIGNAL */
+module ysyx_24110005_Alu #(
     parameter DATA_WIDTH=32,
     parameter OP_WIDTH=7,
     parameter REG_ADDR_WIDTH=5,
-    parameter FUN_WIDTH=3,
-)(
+    parameter FUN_WIDTH=3
+) (
 input [DATA_WIDTH-1:0] src1,
 input [DATA_WIDTH-1:0] src2,
 input [DATA_WIDTH-1:0] imm ,
 input [(OP_WIDTH+FUN_WIDTH)-1:0]sel,
 input [REG_ADDR_WIDTH-1:0]w_addr,
-output [DATA_WIDTH-1:0] w_data,
+output reg [DATA_WIDTH-1:0] w_data,
 output wen
 );
 
-//wire [DATA_WIDTH-1:0]src1_comp;
-//wire [DATA_WIDTH-1:0]src2_comp;
+wire [DATA_WIDTH-1:0]src1_comp;
+wire [DATA_WIDTH-1:0]src2_comp;
+wire [DATA_WIDTH-1:0]imm_comp;
+   
 parameter TYPE_B=7'b1100011;
 parameter TYPE_S=7'b0100011;
 get_comp #(DATA_WIDTH)comp1(src1,src1_comp);
 get_comp #(DATA_WIDTH)comp2(src2,src2_comp);
 get_comp #(DATA_WIDTH)comp3(imm,  imm_comp);
-
-wire [DATA_WIDTH-1:0]w_data_comp;
+reg [DATA_WIDTH-1:0]w_data_comp;
 always@(*)begin
     case(sel) 
-    10'b000 0010011:begin 
+    10'b000_0010011:begin 
         w_data_comp=src1_comp+imm_comp;
-        w_data=w_data_comp[DATA_WIDTH-1]?{w_data_comp[DATA_WIDTH-1],~(w_data_comp[DATA_WIDTH-2:0]-1'b1}:w_data_comp;                            
+        w_data=w_data_comp[DATA_WIDTH-1]?{w_data_comp[DATA_WIDTH-1],~(w_data_comp[DATA_WIDTH-2:0]-1'b1)}:w_data_comp;                            
 	 end
         
     default:w_data=0; 

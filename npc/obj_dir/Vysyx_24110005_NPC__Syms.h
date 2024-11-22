@@ -4,34 +4,34 @@
 // Internal details; most calling programs do not need this header,
 // unless using verilator public meta comments.
 
-#ifndef VERILATED_VENCODE42__SYMS_H_
-#define VERILATED_VENCODE42__SYMS_H_  // guard
+#ifndef VERILATED_VYSYX_24110005_NPC__SYMS_H_
+#define VERILATED_VYSYX_24110005_NPC__SYMS_H_  // guard
 
 #include "verilated.h"
 
 // INCLUDE MODEL CLASS
 
-#include "Vencode42.h"
+#include "Vysyx_24110005_NPC.h"
 
 // INCLUDE MODULE CLASSES
-#include "Vencode42___024root.h"
+#include "Vysyx_24110005_NPC___024root.h"
 
 // SYMS CLASS (contains all model state)
-class Vencode42__Syms final : public VerilatedSyms {
+class Vysyx_24110005_NPC__Syms final : public VerilatedSyms {
   public:
     // INTERNAL STATE
-    Vencode42* const __Vm_modelp;
+    Vysyx_24110005_NPC* const __Vm_modelp;
     bool __Vm_activity = false;  ///< Used by trace routines to determine change occurred
     uint32_t __Vm_baseCode = 0;  ///< Used by trace routines when tracing multiple models
     VlDeleter __Vm_deleter;
     bool __Vm_didInit = false;
 
     // MODULE INSTANCE STATE
-    Vencode42___024root            TOP;
+    Vysyx_24110005_NPC___024root   TOP;
 
     // CONSTRUCTORS
-    Vencode42__Syms(VerilatedContext* contextp, const char* namep, Vencode42* modelp);
-    ~Vencode42__Syms();
+    Vysyx_24110005_NPC__Syms(VerilatedContext* contextp, const char* namep, Vysyx_24110005_NPC* modelp);
+    ~Vysyx_24110005_NPC__Syms();
 
     // METHODS
     const char* name() { return TOP.name(); }

@@ -2,7 +2,7 @@
 # DESCRIPTION: Verilator output: Make include file with class lists
 #
 # This file lists generated Verilated files, for including in higher level makefiles.
-# See Vencode42.mk for the caller.
+# See Vysyx_24110005_NPC.mk for the caller.
 
 ### Switches...
 # C11 constructs required?  0/1 (always on now)
@@ -23,25 +23,24 @@ VM_TRACE_FST = 0
 ### Object file lists...
 # Generated module classes, fast-path, compile with highest optimization
 VM_CLASSES_FAST += \
-	Vencode42 \
-	Vencode42___024root__DepSet_h8da7a7db__0 \
-	Vencode42___024root__DepSet_h3fdb6689__0 \
+	Vysyx_24110005_NPC \
+	Vysyx_24110005_NPC___024root__DepSet_hf25f17a0__0 \
+	Vysyx_24110005_NPC___024root__DepSet_h39f1fb13__0 \
 
 # Generated module classes, non-fast-path, compile with low/medium optimization
 VM_CLASSES_SLOW += \
-	Vencode42__ConstPool_0 \
-	Vencode42___024root__Slow \
-	Vencode42___024root__DepSet_h8da7a7db__0__Slow \
-	Vencode42___024root__DepSet_h3fdb6689__0__Slow \
+	Vysyx_24110005_NPC___024root__Slow \
+	Vysyx_24110005_NPC___024root__DepSet_hf25f17a0__0__Slow \
+	Vysyx_24110005_NPC___024root__DepSet_h39f1fb13__0__Slow \
 
 # Generated support classes, fast-path, compile with highest optimization
 VM_SUPPORT_FAST += \
-	Vencode42__Trace__0 \
+	Vysyx_24110005_NPC__Trace__0 \
 
 # Generated support classes, non-fast-path, compile with low/medium optimization
 VM_SUPPORT_SLOW += \
-	Vencode42__Syms \
-	Vencode42__Trace__0__Slow \
+	Vysyx_24110005_NPC__Syms \
+	Vysyx_24110005_NPC__Trace__0__Slow \
 
 # Global classes, need linked once per executable, fast-path, compile with highest optimization
 VM_GLOBAL_FAST += \

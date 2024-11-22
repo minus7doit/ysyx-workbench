@@ -1,9 +1,5 @@
 MODULE=ysyx_24110005_NPC
 
-.PHONY:sim
-sim: waveform.vcd
- $(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-
 .PHONY:verilate
 verilate: .stamp.verilate
 
@@ -26,20 +22,20 @@ waveform.vcd: ./obj_dir/V$(MODULE)
 	@echo "### BUILDING SIM ###"
 	make -C obj_dir -f V$(MODULE).mk V$(MODULE)
 
-.stamp.verilate: ./vsrc/$(MODULE).v ./csrc/tb_$(MODULE).cpp
+.stamp.verilate: ./vsrc/*.v ./csrc/tb_$(MODULE).cpp
 	@echo
 	@echo "### VERILATING ###"
-	verilator -Wall --trace -cc ./vsrc/$(MODULE).v --exe ./csrc/tb_$(MODULE).cpp
+	verilator -Wall --trace -cc ./vsrc/*.v --exe ./csrc/tb_$(MODULE).cpp --top-module $(MODULE)
 	@touch .stamp.verilate
 
 .PHONY:lint
-lint: $(MODULE).v
-	verilator --lint-only ./vsrc/$(MODULE).v
+lint: *.v
+	verilator --lint-only ./vsrc/*.v
 
 .PHONY: clean
 clean:
 	rm -rf .stamp.*;
 	rm -rf ./obj_dir
-	rm -rf waveform.vcd
+	rm -rf $(MODULE)_waveform.vcd
 
 include ../Makefile
