@@ -9,6 +9,7 @@
 #define VERILATED_VYSYX_24110005_NPC_H_  // guard
 
 #include "verilated.h"
+#include "svdpi.h"
 
 class Vysyx_24110005_NPC__Syms;
 class Vysyx_24110005_NPC___024root;

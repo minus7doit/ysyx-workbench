@@ -3,9 +3,18 @@
 // See Vysyx_24110005_NPC.h for the primary calling header
 
 #include "verilated.h"
+#include "verilated_dpi.h"
 
 #include "Vysyx_24110005_NPC__Syms.h"
 #include "Vysyx_24110005_NPC___024root.h"
+
+extern "C" void finish_sim();
+
+VL_INLINE_OPT void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__alu_ins__DOT__finish_sim_TOP() {
+    VL_DEBUG_IF(VL_DBG_MSGF("+    Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__alu_ins__DOT__finish_sim_TOP\n"); );
+    // Body
+    finish_sim();
+}
 
 #ifdef VL_DEBUG
 VL_ATTR_COLD void Vysyx_24110005_NPC___024root___dump_triggers__act(Vysyx_24110005_NPC___024root* vlSelf);

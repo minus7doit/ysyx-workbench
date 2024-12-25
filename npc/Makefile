@@ -1,5 +1,9 @@
 MODULE=ysyx_24110005_NPC
 
+.PHONY:sim
+sim: waveform.vcd
+ $(call git_commit, "sim RTL")
+
 .PHONY:verilate
 verilate: .stamp.verilate
 

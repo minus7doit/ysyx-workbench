@@ -20,17 +20,25 @@ wire [DATA_WIDTH-1:0]imm_comp;
    
 parameter TYPE_B=7'b1100011;
 parameter TYPE_S=7'b0100011;
-get_comp #(DATA_WIDTH)comp1(src1,src1_comp);
-get_comp #(DATA_WIDTH)comp2(src2,src2_comp);
-get_comp #(DATA_WIDTH)comp3(imm,  imm_comp);
+signed_to_comp #(DATA_WIDTH)comp1(src1,src1_comp);
+signed_to_comp #(DATA_WIDTH)comp2(src2,src2_comp);
+signed_to_comp #(DATA_WIDTH)comp3(imm,  imm_comp);
 reg [DATA_WIDTH-1:0]w_data_comp;
+
+
+//import "DPI-C" function void exit (input int a);
+import "DPI-C" function void finish_sim();
+
+
 always@(*)begin
     case(sel) 
     10'b000_0010011:begin 
         w_data_comp=src1_comp+imm_comp;
         w_data=w_data_comp[DATA_WIDTH-1]?{w_data_comp[DATA_WIDTH-1],~(w_data_comp[DATA_WIDTH-2:0]-1'b1)}:w_data_comp;                            
 	 end
-        
+        10'b000_1110011:begin
+            if(imm==1) finish_sim;
+        end
     default:w_data=0; 
     endcase
 end

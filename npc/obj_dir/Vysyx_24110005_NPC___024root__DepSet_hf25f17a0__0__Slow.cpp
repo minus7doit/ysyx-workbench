@@ -3,6 +3,7 @@
 // See Vysyx_24110005_NPC.h for the primary calling header
 
 #include "verilated.h"
+#include "verilated_dpi.h"
 
 #include "Vysyx_24110005_NPC__Syms.h"
 #include "Vysyx_24110005_NPC___024root.h"

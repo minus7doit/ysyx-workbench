@@ -1,9 +1,12 @@
 #include <am.h>
 #include <nemu.h>
-
+#include<stdio.h>
 extern char _heap_start;
 int main(const char *args);
-
+/*int main (const char *args){
+printf("hello world");
+return 0;
+}*/
 Area heap = RANGE(&_heap_start, PMEM_END);
 static const char mainargs[MAINARGS_MAX_LEN] = MAINARGS_PLACEHOLDER; // defined in CFLAGS
 

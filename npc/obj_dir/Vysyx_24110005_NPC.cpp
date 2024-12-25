@@ -4,6 +4,7 @@
 #include "Vysyx_24110005_NPC.h"
 #include "Vysyx_24110005_NPC__Syms.h"
 #include "verilated_vcd_c.h"
+#include "verilated_dpi.h"
 
 //============================================================
 // Constructors

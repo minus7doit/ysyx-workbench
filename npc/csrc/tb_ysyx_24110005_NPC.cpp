@@ -1,41 +1,49 @@
-#include "verilated.h"
-#include "verilated_vcd_c.h"
-#include "../obj_dir/Vysyx_24110005_NPC.h"
+#include <stdlib.h>
+#include <iostream>
+#include <verilated.h>
+#include <verilated_vcd_c.h>
+#include "Vysyx_24110005_NPC.h"
+//#include "Vysyx_24110005_NPC_024unit.h"
+#include "svdpi.h"
+#include "Vysyx_24110005_NPC__Dpi.h"
 
-VerilatedContext* contextp = NULL;
-VerilatedVcdC* tfp = NULL;
-
-static Vysyx_24110005_NPC* top;
-#define MAX_SIM 100
-void step_and_dump_wave(){
-  top->eval();
-  contextp->timeInc(1);
-  tfp->dump(contextp->time());
+#define MAX_SIM_TIME 200
+vluint64_t sim_time = 0;
+bool sim_break=0;
+//VerilatedVcdC *m_trace = new VerilatedVcdC;
+// Vysyx_24110005_NPC *dut = new Vysyx_24110005_NPC;
+void finish_sim(){
+    //m_trace->close();
+    // delete dut;
+     //exit(EXIT_SUCCESS);
+    sim_break=true;
+   // std::cout << "NPC executed ebreak. Ending simulation." << std::endl;
+    //Verilated::gotFinish(true); // 通知Verilator仿真结束
 }
 
-void sim_init(){
-  contextp = new VerilatedContext;
-  tfp = new VerilatedVcdC;
-  top = new Vysyx_24110005_NPC;
-  contextp->traceEverOn(true);
-  top->trace(tfp, 0);
-  tfp->open("ysyx_24110005_NPC_waveform.vcd");
-  top->clk=0;
-  top->rst=0;
-}
+int main(int argc, char** argv, char** env) {
+    Vysyx_24110005_NPC *dut = new Vysyx_24110005_NPC;
 
-void sim_exit(){
-  step_and_dump_wave();
-  tfp->close();
+    Verilated::traceEverOn(true);
+    VerilatedVcdC *m_trace = new VerilatedVcdC;
+    dut->trace(m_trace, 5);
+    m_trace->open("ysyx_24110005_NPC_waveform.vcd");
+
+
+	while (sim_time < MAX_SIM_TIME) {
+    dut->rst = 0;
+    if(sim_time > 1 && sim_time < 5){
+        dut->rst = 1;
+    }
+
+    dut->clk ^= 1;
+    dut->eval();
+    m_trace->dump(sim_time);
+    sim_time++;
+    if(sim_break) break;
 }
-int main() {
-  sim_init();
-  uint32_t t;
-  while(t<MAX_SIM){
-      top->clk=~top->clk;
-      if(t<5) top->rst=1; else top->rst=0;
-      t++;
-  }
-  sim_exit();
+    m_trace->close();
+    delete dut;
+    exit(EXIT_SUCCESS);
 }
 

@@ -9,11 +9,18 @@ module ysyx_24110005_NPC(
     //parameter BASE_ADDR=32'h80000000;
     //parameter QUAR_WIDTH=8;
     parameter MAX_INS=1024;
+
+   /* import "DPI-C" function int add (input int a, input int b);
+    initial begin
+    $display("%x + %x = %x", 1, 2, add(1,2));
+    end*/
+
     reg [DATA_WIDTH-1:0]inst_mem[MAX_INS-1:0];//暂时用reg，后面用mem;nst_mem
                 initial begin
-              inst_mem[0] =   32'b000000000101_00000_000_00001_0010011;
+              inst_mem[0] = 32'b000000000101_00000_000_00001_0010011;
               inst_mem[1] = 32'b000000001010_00001_000_00010_0010011; 
               inst_mem[2] = 32'b111111111101_00010_000_00011_0010011; 
+              inst_mem[3] = 32'b000000000001_00000_000_00000_1110011;
                 end
     
     reg [31:0]pc;
@@ -25,7 +32,11 @@ module ysyx_24110005_NPC(
     end
 
     wire [DATA_WIDTH-1:0]inst;
-    assign inst=inst_mem[pc[11:2]];
+    assign inst=inst_mem[pc[11:2]];//相当于直接除以4了
+   
+//import "DPI-C" function void exit(input a);
+
+
 
 wire [FUN_WIDTH-1: 0]fun;
 wire [OP_WIDTH-1:0]opcode;
