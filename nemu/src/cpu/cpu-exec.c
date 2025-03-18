@@ -17,7 +17,9 @@
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
 #include <locale.h>
-
+#include <dlfcn.h>
+#include<../src/monitor/sdb/sdb.h>
+#include<cpu/ringbuffer.h>
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -29,7 +31,7 @@ CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
-
+static RingBuffer iringbuf;
 void device_update();
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
@@ -38,6 +40,8 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+  if(CONFIG_WATCHPOINT) { scan_watchpoint();}
+
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
@@ -68,6 +72,9 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
+  char asm_str[64];
+  disassemble(asm_str,sizeof(asm_str),s->pc, (uint8_t *)&s->isa.inst, ilen);
+  RingBuffer_write(&iringbuf,asm_str,s->pc,&s->isa.inst);//按道理32位，应该是4字节;
 #endif
 }
 
@@ -78,7 +85,7 @@ static void execute(uint64_t n) {
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
-    IFDEF(CONFIG_DEVICE, device_update());
+	IFDEF(CONFIG_DEVICE, device_update());
   }
 }
 
@@ -92,6 +99,7 @@ static void statistic() {
 }
 
 void assert_fail_msg() {
+  RingBuffer_print(&iringbuf,MAX_INST_TO_PRINT);
   isa_reg_display();
   statistic();
 }
@@ -106,13 +114,16 @@ void cpu_exec(uint64_t n) {
     default: nemu_state.state = NEMU_RUNNING;
   }
 
+
   uint64_t timer_start = get_time();
-
+  RingBuffer_init(&iringbuf);//创建一个大小为16的环形缓冲区;
   execute(n);
-
+//  RingBuffer_print(&iringbuf,MAX_INST_TO_PRINT);
   uint64_t timer_end = get_time();
   g_timer += timer_end - timer_start;
-
+  if((nemu_state.state==NEMU_ABORT)|(nemu_state.state==NEMU_END))
+    RingBuffer_print(&iringbuf,MAX_INST_TO_PRINT);
+  
   switch (nemu_state.state) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 

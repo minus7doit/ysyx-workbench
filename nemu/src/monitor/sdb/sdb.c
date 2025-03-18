@@ -12,13 +12,13 @@
 *
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
-
+#include <assert.h>
 #include <isa.h>
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
-
+#include <memory/vaddr.h>
 static int is_batch_mode = false;
 
 void init_regex();
@@ -34,7 +34,6 @@ static char* rl_gets() {
   }
 
   line_read = readline("(nemu) ");
-
   if (line_read && *line_read) {
     add_history(line_read);
   }
@@ -49,8 +48,77 @@ static int cmd_c(char *args) {
 
 
 static int cmd_q(char *args) {
-  return -1;
+	nemu_state.state=NEMU_QUIT; 
+  	return -1;
 }
+static int cmd_si(char *args){
+	//uint64_t num = atoi(args);
+	if(args == NULL) cpu_exec(1);
+	else
+	{
+			uint64_t num = atoi(args);
+			  cpu_exec(num);
+	}
+
+	return 0;
+}
+
+static int cmd_info(char *args){
+        if(args==NULL) printf("please input 'info r'or'info w\n'");
+		else if(strcmp(args,"r")==0) isa_reg_display();
+		else if(strcmp(args,"w")==0) wp_print(); 
+		else printf("please input 'info r'or'info w'\n");
+		return 0;
+}
+
+static int cmd_x(char *args){
+	char *args_end = args + strlen(args);
+	char *arg1 = strtok(args, " ");
+	
+	char *arg2 = arg1 + strlen(arg1) + 1;
+		
+	if (arg2 >= args_end) {
+	arg2 = NULL;}
+	
+	int len = atoi(arg1);
+	uint32_t addr;
+	sscanf(arg2,"%x",&addr);
+	//printf("The hexadecimal string %s is converted to %x in hexadecimal.\n", arg2, addr);
+	for(int i=0;i<len;i++){
+	printf("the data at %x is %x\n",addr,vaddr_read(addr,4));
+	addr=addr+4;
+	}
+
+	return 0;
+}
+
+static int cmd_p(char *args){
+	bool success;
+	uint32_t result=expr(args,&success);
+    printf("the result of the expression is dec:%d\thex:%x\n",result,result);
+	return 0;
+}
+
+static int cmd_w(char *args){
+      WP *wp=new_wp();
+	  bool success;
+	  uint32_t result=expr(args,&success);
+	  wp->result=result;
+	  strcpy(wp->expression,args);//段错误发生在这里
+	  success=true;
+	  printf("wp 's member value is NO:%d EXPR:%s and RESULT %u\n",wp->NO,wp->expression,wp->result);
+      return 0;
+  }
+static int cmd_d(char *args){
+//	printf("the args is  %s",args);
+	int NO;
+	sscanf(args,"%d",&NO);
+    wp_delete(NO);
+	printf("NO %d watchpoint  delete successfully\n ",NO);
+
+    return 0;
+  }
+
 
 static int cmd_help(char *args);
 
@@ -62,7 +130,12 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  { "si", "step forward for 1 or other", cmd_si },
+  {"info", " print reg state or watcher info",cmd_info },
+  { "x", " scan the Memory,Example: x 10 0x80000000,will output 10 values of 4 byte from start adress 0x80000000",cmd_x },
+  { "p", "calculate the value of the arthmetic expression",cmd_p},
+  { "w", "set a watcher point",cmd_w},
+  { "d", "delte the watcher point whose serial number is N",cmd_d},
   /* TODO: Add more commands */
 
 };
@@ -93,7 +166,7 @@ static int cmd_help(char *args) {
 }
 
 void sdb_set_batch_mode() {
-  is_batch_mode = true;
+ is_batch_mode = true;
 }
 
 void sdb_mainloop() {
@@ -108,11 +181,12 @@ void sdb_mainloop() {
     /* extract the first token as the command */
     char *cmd = strtok(str, " ");
     if (cmd == NULL) { continue; }
-
+    //    printf(" the cmd is %s \n ",cmd);
     /* treat the remaining string as the arguments,
      * which may need further parsing
      */
     char *args = cmd + strlen(cmd) + 1;
+//	printf(" the args is %s \n ",args);
     if (args >= str_end) {
       args = NULL;
     }
@@ -137,7 +211,7 @@ void sdb_mainloop() {
 void init_sdb() {
   /* Compile the regular expressions. */
   init_regex();
-
+//	test_expr();
   /* Initialize the watchpoint pool. */
   init_wp_pool();
 }

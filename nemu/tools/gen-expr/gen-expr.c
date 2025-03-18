@@ -28,11 +28,71 @@ static char *code_format =
 "int main() { "
 "  unsigned result = %s; "
 "  printf(\"%%u\", result); "
-"  return 0; "
+"  return 0;"
 "}";
+#define MAX_DEPTH 20
+int k = 0;  
+int depth=0;
+//int last_was_num = 0;  
+//int last_was_paren = 0;  
+//int last_was_op =1;
 
+static void gen_space(){
+	if(rand()%2)
+	 buf[k++]=' ';
+}
+static void gen_num(){
+	gen_space();
+// if(buf[k-1]==')')	return;
+ uint32_t rand_num=rand();
+  k+=sprintf(buf+k,"%u",rand_num);
+  gen_space();
+  //last_was_num=1;
+  //last_was_op=0;
+//  last_was_paren=0;
+}
+
+static void gen_rand_op(){
+	//if(last_was_op) return;
+	int choose_op = rand()%4;
+	if(k==0) {
+			gen_num();
+	}
+	else{	
+	switch(choose_op){
+    case 0 :buf[k++] = '+';break;
+	case 1 :buf[k++] = '-';break;
+	case 2 :buf[k++] = '*';break;
+	default:buf[k++] = '/';break;
+	}
+}
+	//last_was_op=1;
+	//last_was_num=0;
+    //last_was_paren=0;
+ }
+
+static void gen(char arg){
+  //  if(arg==')') last_was_paren=1;
+	buf[k++]=arg;
+	//last_was_num=0;
+//	last_was_op=0;
+
+}
 static void gen_rand_expr() {
-  buf[0] = '\0';
+	if (depth > MAX_DEPTH) {  // 控制递归深度
+        gen_num();
+        return;
+    }
+	depth++;
+ int choose = rand()%3;
+  switch (choose) {
+    case 0: gen_num();break;
+    case 1:// if((last_was_paren)||(last_was_num)) return; 
+			gen('('); gen_rand_expr(); gen(')');
+			break;
+    case 2: gen_rand_expr(); gen_rand_op(); gen_rand_expr(); break;
+  }
+  depth--;
 }
 
 int main(int argc, char *argv[]) {
@@ -44,23 +104,26 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
+    //last_was_num = 0;
+   // last_was_paren = 0;
+    //last_was_op =1;
+    depth=0;
+	k=0;
+	memset(buf, 0, sizeof(buf));  
     gen_rand_expr();
-
     sprintf(code_buf, code_format, buf);
-
     FILE *fp = fopen("/tmp/.code.c", "w");
     assert(fp != NULL);
     fputs(code_buf, fp);
     fclose(fp);
-
-    int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
+	int ret = system("gcc /tmp/.code.c -Wall -Werror -o /tmp/.expr");
     if (ret != 0) continue;
 
     fp = popen("/tmp/.expr", "r");
     assert(fp != NULL);
 
-    int result;
-    ret = fscanf(fp, "%d", &result);
+    uint32_t result;
+    ret = fscanf(fp, "%u", &result);
     pclose(fp);
 
     printf("%u %s\n", result, buf);
