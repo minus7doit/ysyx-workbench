@@ -150,11 +150,7 @@ config ITRACE_COND
   depends on ITRACE
   string "Only trace instructions when the condition is true"
   default "true"
- 
-config MTRACE
-  depends on  TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER
-  bool "Enable memory tracer"
-  default n 
+
 
 config DIFFTEST
   depends on TARGET_NATIVE_ELF
@@ -163,10 +159,6 @@ config DIFFTEST
   help
     Enable differential testing with a reference design.
     Note that this will significantly reduce the performance of NEMU.
-
-config WATCHPOINT
-   bool "Enable watchpoints"
-   default y
 
 choice
   prompt "Reference design"
