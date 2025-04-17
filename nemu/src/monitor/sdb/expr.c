@@ -203,7 +203,6 @@ uint32_t find_main_op(int p,int q){//这里除法的优先级被提前了是为�
 
 uint32_t eval(int p,int q) {
   depth ++;
-  uint32_t value;
   if (p > q) {
 	if(tokens[p].type=='-'&&((tokens[p-1].type=='(')|(p==0))){
 	tokens[p].type='*';
@@ -222,6 +221,7 @@ uint32_t eval(int p,int q) {
   }
   else if (p == q) {
 		  bool success_reg;
+      uint32_t value;
 		  if(tokens[p].type==TK_NUM)       sscanf(tokens[p].str,"%d",&value);
 		  else if(tokens[p].type==TK_HEX)  sscanf(tokens[p].str,"%x",&value);
 		  else if(tokens[p].type==TK_REG){
