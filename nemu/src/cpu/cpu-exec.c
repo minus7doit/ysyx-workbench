@@ -20,11 +20,13 @@
 #include <dlfcn.h>
 #include<../src/monitor/sdb/sdb.h>
 #include<cpu/ringbuffer.h>
+#include <config/target/native/elf.h>
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
  * You can modify this value as you want.
  */
+
 #define MAX_INST_TO_PRINT 10
 
 CPU_state cpu = {};
@@ -33,6 +35,9 @@ static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 static RingBuffer iringbuf;
 void device_update();
+void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);//先申明函数
+void exec_instructions(Decode *s);
+
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
@@ -48,6 +53,11 @@ static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);
+
+  #ifdef CONFIG_FTRACE
+  exec_instructions(s);
+  #endif
+
   cpu.pc = s->dnpc;
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf;
@@ -60,27 +70,33 @@ static void exec_once(Decode *s, vaddr_t pc) {
 #else
   for (i = ilen - 1; i >= 0; i --) {
 #endif
-    p += snprintf(p, 4, " %02x", inst[i]);
+    p += snprintf(p, 4, " %02x", inst[i]);//最小宽度，2字符
   }
   int ilen_max = MUXDEF(CONFIG_ISA_x86, 8, 4);
   int space_len = ilen_max - ilen;
+
   if (space_len < 0) space_len = 0;
+
   space_len = space_len * 3 + 1;
   memset(p, ' ', space_len);
   p += space_len;
 
-  void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
+      //调用
+      //handle引擎句柄，输出字符串长度，
+      //address起始地址，code机器码（数组）,code_size机器码字节长度
+
   char asm_str[64];
-  disassemble(asm_str,sizeof(asm_str),s->pc, (uint8_t *)&s->isa.inst, ilen);
+  disassemble(asm_str,sizeof(asm_str),s->pc, (uint8_t *)&s->isa.inst, ilen);//
   RingBuffer_write(&iringbuf,asm_str,s->pc,&s->isa.inst);//按道理32位，应该是4字节;
 #endif
+
 }
 
 static void execute(uint64_t n) {
   Decode s;
-  for (;n > 0; n --) {
+  for (;n > 0; n--) {
     exec_once(&s, cpu.pc);
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);
@@ -116,14 +132,17 @@ void cpu_exec(uint64_t n) {
 
 
   uint64_t timer_start = get_time();
+  #ifdef CONFIG_ITRACE
   RingBuffer_init(&iringbuf);//创建一个大小为16的环形缓冲区;
+  #endif
   execute(n);
 //  RingBuffer_print(&iringbuf,MAX_INST_TO_PRINT);
   uint64_t timer_end = get_time();
   g_timer += timer_end - timer_start;
+  #ifdef CONFIG_ITRACE
   if((nemu_state.state==NEMU_ABORT)|(nemu_state.state==NEMU_END))
     RingBuffer_print(&iringbuf,MAX_INST_TO_PRINT);
-  
+  #endif
   switch (nemu_state.state) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 

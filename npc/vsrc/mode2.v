@@ -1,6 +1,6 @@
 module  mode2#(
     parameter DATA_WIDTH=16,
-    parameter DIVISOR_WIDTH=6
+    parameter DIVISOR_WIDTH=6//校验crc位宽
 ) (
     input                           I_en,
     input  [DATA_WIDTH-1:0]         I_data,
@@ -20,7 +20,7 @@ always @(*) begin
     end
     else begin
         result_mid=I_data;
-        for(i=1;i<=DATA_WIDTH-DIVISOR_WIDTH+1;i=i+1)begin//向左循环位移，低位补零的操作，至少补充十次
+        for(i=1;i<=DATA_WIDTH-DIVISOR_WIDTH+1;i=i+1)begin//向左循环位移，低位补零的操作，至少补充DATA_WIDTH-DIVISOR_WIDTH
             if(result_mid[DATA_WIDTH-1])begin
                 remain=result_mid[DATA_WIDTH-1:DATA_WIDTH-DIVISOR_WIDTH]^I_divisor;//由于最高位为1才计算该conditon，而crc是100101,故ramin的最高位一定是0；
                 result_next={remain[DIVISOR_WIDTH-2:0],result_mid[DATA_WIDTH-DIVISOR_WIDTH-1:0],1'b0};

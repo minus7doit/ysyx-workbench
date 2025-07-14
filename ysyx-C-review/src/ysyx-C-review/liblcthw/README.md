@@ -1,0 +1,1 @@
+最后的改动是在测试.c文件中将include源文件的.c才通过了测试。同时在tests文件夹中只需要include<lcthw/.h>就可以将src文件夹的子文件夹的文件包括进来，猜测与makefile的编写有关 
