@@ -29,6 +29,47 @@ int atoi(const char* nptr) {
   return x;
 }
 
+char *itoa(int value, char *str, int base) {
+  char *p = str;
+  int sign = value < 0 && base == 10 ? -1 : 1;
+
+  if (sign < 0) {
+    value = -value;
+  }
+
+  do {
+    *p++ = "0123456789abcdef"[value % base];
+    value /= base;
+  } while (value);
+
+  if (sign < 0) {
+    *p++ = '-';
+  }
+
+  *p-- = '\0';
+
+  // Reverse the string
+  char *start = str;
+  while (start < p) {
+    char temp = *start;
+    *start++ = *p;
+    *p-- = temp;
+  }
+
+  return str;
+}
+
+void string_generate (char * string ,uint32_t len){
+  char strtab[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  for ( uint32_t i = 0; i < len; i++) {
+    uint32_t idx = rand() % 62;
+    *string = strtab[idx];
+    string++;
+  }
+  *string = '\0';
+}
+
+
 void *malloc(size_t size) {
   // On native, malloc() will be called during initializaion of C runtime.
   // Therefore do not call panic() here, else it will yield a dead recursion:

@@ -1,8 +1,7 @@
-#include <cpu/decode.h>
+#include "npc.h"
  // Assuming elf.h contains necessary ELF handling functions
-#include <config/target/native/elf.h>
-#include <memory/vaddr.h>
 #include <elf.h>
+
 #define MAX_SYMBOLS 1024
 #define MAX_CALL_STACK 512
 typedef struct {
@@ -18,17 +17,18 @@ size_t sym_num = 0;
 //uintptr_t call_stack [MAX_CALL_STACK];
 uint32_t stack_ptr = 0;
 
-#ifndef FTRACE
+//#ifndef FTRACE
+
 
 void init_elf(const char *elf_file) {
     if (elf_file == NULL) {
-        Log("No ELF file specified.");
+        printf("No ELF file specified.");
         return;
     }
     
     FILE *fp = fopen(elf_file, "rb");
     if (fp == NULL) {
-        Log("Failed to open ELF file: %s", elf_file);
+        printf("Failed to open ELF file: %s", elf_file);
         exit(EXIT_FAILURE);
     }
     //printf("check elf file %s\n", elf_file);
@@ -36,7 +36,7 @@ void init_elf(const char *elf_file) {
     int num = 0;
     num=fread(&ehdr,sizeof(Elf32_Ehdr), 1, fp);
     if (num == 0){
-        Log("Failed to read ELF header from file: %s", elf_file);
+        printf("Failed to read ELF header from file: %s", elf_file);
         fclose(fp);
         exit(EXIT_FAILURE);
     }
@@ -95,8 +95,7 @@ void init_elf(const char *elf_file) {
 }
 
 
-
-void ftrace_log(vaddr_t addr, const char *type , vaddr_t npc , uint32_t stack_ptr) {
+void ftrace_log(uint32_t addr, const char *type , uint32_t npc , uint32_t stack_ptr) {
     // Log the instruction and its address
     int func_idx = 0;
     for(int i = 0 ;i < symbol_count; i++) {
@@ -108,34 +107,31 @@ void ftrace_log(vaddr_t addr, const char *type , vaddr_t npc , uint32_t stack_pt
     for (uint32_t j = 0; j < stack_ptr; j++) {
        printf(" ");
     }
-    if(strcmp(type, "return") == 0) {
+    if(strcmp(type, "return") == 0) {   
          printf ("0x%08x: %s[%s]\n",addr, type,symbols[func_idx].name);
     }
     else{
          printf("0x%08x: %s[%s@0x%08x]\n",addr, type,symbols[func_idx].name,npc);
     }
 }
-void exec_instructions(Decode *s) {
-    vaddr_t pc = s->pc;
-    uint32_t instr = s->isa.inst;
-    vaddr_t npc = s->dnpc;
-    if((instr & 0X7F )== 0x6F){
+void exec_instructions(uint32_t pc, uint32_t inst, uint32_t npc) {
+    if((inst & 0X7F )== 0x6F){
         stack_ptr++;
         ftrace_log(pc,"call",npc ,stack_ptr);
     }
-    else if((instr & 0X7F) == 0x67 && (instr != 0x8067)) {
+    else if((inst & 0X7F) == 0x67 && (inst != 0x8067)) {
         if(stack_ptr > 0){
             stack_ptr++;
             ftrace_log(pc,"call",npc ,stack_ptr);
         }
     }   
     else{
-        if(instr == 0x8067) {
+        if(inst == 0x8067) {
             if(stack_ptr > 0) {
                 stack_ptr--;
             }
             else {
-                Log("Stack underflow: stack_ptr = %d", stack_ptr);
+                printf("Stack underflow: stack_ptr = %d", stack_ptr);
                 return;
             }
         ftrace_log(pc,"return",npc,stack_ptr+1);
@@ -143,4 +139,4 @@ void exec_instructions(Decode *s) {
       
     }
 }
-#endif
+//#endif

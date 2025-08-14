@@ -18,7 +18,17 @@
 #include "../local-include/reg.h"
 
 bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
-  return false;
+  if(ref_r->pc != cpu.pc){
+    Log("pc mismatch: ref    = " FMT_WORD ", nemu pc = " FMT_WORD, ref_r->pc, pc);
+    return false;
+  }
+  for(int i = 0; i < MUXDEF(CONFIG_RVE, 16 ,32);i++){
+   if(ref_r->gpr[i] != gpr(i)){
+      Log("gpr mismatch: ref gpr[%d] = " FMT_WORD ", nemu gpr[%d] = " FMT_WORD, i, ref_r->gpr[i], i, gpr(i));
+      return false;
+    }
+  }
+  return true;
 }
 
 void isa_difftest_attach() {

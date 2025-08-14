@@ -14,6 +14,7 @@ Vysyx_24110005_NPC::Vysyx_24110005_NPC(VerilatedContext* _vcontextp__, const cha
     , vlSymsp{new Vysyx_24110005_NPC__Syms(contextp(), _vcname__, this)}
     , clk{vlSymsp->TOP.clk}
     , rst{vlSymsp->TOP.rst}
+    , exit_code{vlSymsp->TOP.exit_code}
     , rootp{&(vlSymsp->TOP)}
 {
     // Register model with the context

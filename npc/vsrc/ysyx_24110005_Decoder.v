@@ -16,7 +16,7 @@ module ysyx_24110005_Decoder #(
     parameter TYPE_WIDTH=7;
     parameter TYPE_I0=7'b0000011;
     parameter TYPE_I1=7'b0010011;
-   // parameter TYPE_I2=7'b0001111;
+    //parameter TYPE_I2=7'b1100111;
     parameter TYPE_I3=7'b1110011;
     parameter TYPE_B=7'b1100011;
     parameter TYPE_J=7'b1101111;
@@ -26,12 +26,14 @@ module ysyx_24110005_Decoder #(
     //parameter TYPE_R=7'b0110011;
     
     assign opcode=inst[OP_WIDTH-1:0];
-    assign fun=inst[14:12];
-    assign ra1=inst[19:15];
-    assign ra2=inst[24:20];
-    assign w_addr=inst[11:7];
+    assign fun=inst[14:12];//选择同一类型指令的其中一条指令
+    assign ra1=inst[19:15];//寄存器地址1
+    assign ra2=inst[24:20];//寄存器地址2
 
-MuxKeyWithDefault #(
+    assign w_addr= inst[11:7];//目标寄存器地址
+    //专门用来写寄存器的；和S型指令直接写进地址还不太一样
+//根据指令类型取出立即数
+ysyx_24110005_MuxKeyWithDefault #(
     .NR_KEY(TYPE_NUM),
     .KEY_LEN(TYPE_WIDTH),
     .DATA_LEN(DATA_WIDTH)) 
@@ -42,6 +44,8 @@ imm_mux (
     .lut({TYPE_U0,{inst[31:12],12'b0},TYPE_U1,{inst[31:12],12'b0},TYPE_I0,{{inst[31:12],12'b0},TYPE_I1,{20{inst[31]}},inst[31:20]},TYPE_I3,{{20{inst[31]}},inst[31:20]},TYPE_B,{{19{inst[31]}},inst[31],inst[7],inst[30:25],inst[11:8],1'b0},TYPE_J,{{11{inst[31]}},inst[31],inst[19:12],inst[20],inst[30:21],1'b0},TYPE_S,{{20{inst[31]}},inst[31:25],inst[11:7]}})
 );
 //在这里对寄存器进行读？
+
+
 endmodule
 
 

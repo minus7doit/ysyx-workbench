@@ -16,10 +16,11 @@
 #include <cpu/cpu.h>
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
+#include <cpu/deadloop.h>
 #include <locale.h>
 #include <dlfcn.h>
-#include<../src/monitor/sdb/sdb.h>
-#include<cpu/ringbuffer.h>
+#include <../src/monitor/sdb/sdb.h>
+#include <cpu/ringbuffer.h>
 #include <config/target/native/elf.h>
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
@@ -34,9 +35,17 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 static RingBuffer iringbuf;
+DEADLOOP dl = {
+  .last_pc = 0X80000000,
+  .loop_cnt = 0
+};
+
+
+
 void device_update();
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);//先申明函数
 void exec_instructions(Decode *s);
+void deadloop_detect(DEADLOOP *dl, vaddr_t cur_pc);
 
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
@@ -97,9 +106,11 @@ static void exec_once(Decode *s, vaddr_t pc) {
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n--) {
+    //printf("Executing instruction at pc = %08x\n", cpu.pc);
     exec_once(&s, cpu.pc);
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);
+    deadloop_detect(&dl, s.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
 	IFDEF(CONFIG_DEVICE, device_update());
   }
@@ -129,7 +140,6 @@ void cpu_exec(uint64_t n) {
       return;
     default: nemu_state.state = NEMU_RUNNING;
   }
-
 
   uint64_t timer_start = get_time();
   #ifdef CONFIG_ITRACE

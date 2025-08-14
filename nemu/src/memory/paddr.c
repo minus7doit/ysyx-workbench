@@ -37,7 +37,7 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 }
 
 static void out_of_bound(paddr_t addr) {
-  panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
+  panic("address = " FMT_PADDR " is out of bound of nemu pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
       addr, PMEM_LEFT, PMEM_RIGHT, cpu.pc);
 }
 
@@ -51,7 +51,8 @@ void init_mem() {
 }
 
 word_t paddr_read(paddr_t addr, int len) {  
-#ifdef CONFIG_MTRACE
+  printf("program is reading nemu memory: 0x%x \n",addr);
+  #ifdef CONFIG_MTRACE
     printf("program is reading memory: 0x%x \n",addr);
 #endif
   if (likely(in_pmem(addr))) return pmem_read(addr, len);
@@ -61,6 +62,7 @@ word_t paddr_read(paddr_t addr, int len) {
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
+  printf("program is writing 0x%08x to nemu memory: 0x%x \n",data,addr);
 #ifdef CONFIG_MTRACE
     printf("program is writing 0x%08x to memory: 0x%x \n",data,addr);
 #endif

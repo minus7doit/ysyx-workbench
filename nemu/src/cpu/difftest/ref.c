@@ -17,17 +17,43 @@
 #include <cpu/cpu.h>
 #include <difftest-def.h>
 #include <memory/paddr.h>
+#include <dlfcn.h>
 
+void paddr_write(paddr_t addr, int len, word_t data);
+word_t paddr_read(paddr_t addr, int len);
+
+
+//实现下面的函数，用来与NPC进行对比测试
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
-  assert(0);
+  //printf("\033[32mDifftest memcpy at addr =  %08x, n = %ld, direction = %d\033[32m\n", addr, n, direction);
+  assert (direction == DIFFTEST_TO_REF);
+  if(direction == DIFFTEST_TO_REF){
+    for(int i = 0; i < (n/4); i++) {
+        paddr_write(addr+4*i, 4, *(word_t *)(buf+4*i));
+    }
+  } else {
+    //memcpy(buf, paddr_read(addr, n), n);
+  }
 }
 
 __EXPORT void difftest_regcpy(void *dut, bool direction) {
-  assert(0);
-}
+ /*if (direction /*== DIFFTEST_TO_REF ) {
+    CPU_state *r = (CPU_state *)dut;   // 关键：先强转
+   /* for (int i = 0; i < 32; i++) {
+      printf("npc gpr[%2d] : 0x%08x\n", i, r->gpr[i]);
+    }
+      printf("npc pc       : 0x%08x\n", r->pc);
+  }*/
+  if (direction == DIFFTEST_TO_REF) {
+       memcpy(&cpu, dut, DIFFTEST_REG_SIZE);
+  } else {
+       memcpy(dut, &cpu, DIFFTEST_REG_SIZE);
+  }
 
+}
 __EXPORT void difftest_exec(uint64_t n) {
-  assert(0);
+  //printf("\033[32mDifftest exec %ld instructions\033[32m\n", n);
+  while (n --) cpu_exec(1);
 }
 
 __EXPORT void difftest_raise_intr(word_t NO) {

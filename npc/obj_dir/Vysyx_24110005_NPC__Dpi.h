@@ -16,8 +16,18 @@ extern "C" {
 
 
     // DPI IMPORTS
-    // DPI import at vsrc/ysyx_24110005_Alu.v:30:30
+    // DPI import at /home/minus7/ysyx-workbench/npc/./vsrc/ysyx_24110005_NPC.v:14:34
+    extern void difftest_step(unsigned int pc, unsigned int npc);
+    // DPI import at /home/minus7/ysyx-workbench/npc/./vsrc/ysyx_24110005_NPC.v:8:34
     extern void finish_sim();
+    // DPI import at /home/minus7/ysyx-workbench/npc/./vsrc/ysyx_24110005_NPC.v:11:34
+    extern void function_trace(unsigned int pc, unsigned int inst, unsigned int npc);
+    // DPI import at /home/minus7/ysyx-workbench/npc/./vsrc/ysyx_24110005_NPC.v:9:34
+    extern void inst_trace(unsigned int pc, unsigned int inst, unsigned int npc);
+    // DPI import at /home/minus7/ysyx-workbench/npc/./vsrc/ysyx_24110005_NPC.v:13:33
+    extern int pmem_read(unsigned int raddr);
+    // DPI import at /home/minus7/ysyx-workbench/npc/./vsrc/ysyx_24110005_Alu.v:37:30
+    extern void pmem_write(unsigned int waddr, int wdata, char wmask);
 
 #ifdef __cplusplus
 }
