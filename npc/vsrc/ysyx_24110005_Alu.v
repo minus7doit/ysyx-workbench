@@ -54,9 +54,13 @@ parameter BASE_ADDR=32'h80000000;
 
 //ysyx_24110005_signed_to_comp #(DATA_WIDTH)comp3(imm,  imm_comp);//riscv的立即数是以补码形式存储的，所以不需要转换
 //reg [DATA_WIDTH-1:0]w_data_comp;
+reg [3:0] op_lut [0:1023];
+initial begin
+    op_lut[99]=4'b0000;
+end
+wire [3:0]op;
 
-
-
+assign op=op_lut[{fun,opcode}];
 assign sel = {fun,opcode};
 
 

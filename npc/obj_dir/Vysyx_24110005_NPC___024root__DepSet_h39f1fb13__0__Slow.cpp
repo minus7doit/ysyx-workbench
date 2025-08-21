@@ -44,6 +44,7 @@ VL_ATTR_COLD void Vysyx_24110005_NPC___024root___eval_initial__TOP(Vysyx_2411000
     vlSelf->ysyx_24110005_NPC__DOT__ins_Decoder__DOT__imm_mux__DOT__i0__DOT__key_list[6U] = 0x17U;
     vlSelf->ysyx_24110005_NPC__DOT__ins_Decoder__DOT__imm_mux__DOT__i0__DOT__key_list[7U] = 0x37U;
     vlSelf->ysyx_24110005_NPC__DOT__pc = 0x80000000U;
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__op_lut[0x63U] = 0U;
 }
 
 VL_ATTR_COLD void Vysyx_24110005_NPC___024root___eval_final(Vysyx_24110005_NPC___024root* vlSelf) {
@@ -629,6 +630,9 @@ VL_ATTR_COLD void Vysyx_24110005_NPC___024root___ctor_var_reset(Vysyx_24110005_N
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__sel = VL_RAND_RESET_I(10);
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_addr = VL_RAND_RESET_I(32);
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata = VL_RAND_RESET_I(32);
+    for (int __Vi0 = 0; __Vi0 < 1024; ++__Vi0) {
+        vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__op_lut[__Vi0] = VL_RAND_RESET_I(4);
+    }
     vlSelf->__VdfgTmp_h1a1a97ac__0 = 0;
     vlSelf->__VdfgTmp_h6578c3af__0 = 0;
     vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__pmem_read__0__Vfuncout = 0;

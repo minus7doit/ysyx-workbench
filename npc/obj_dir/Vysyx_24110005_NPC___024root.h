@@ -49,6 +49,7 @@ class Vysyx_24110005_NPC___024root final : public VerilatedModule {
     VlUnpacked<CData/*6:0*/, 8> ysyx_24110005_NPC__DOT__ins_Decoder__DOT__imm_mux__DOT__i0__DOT__key_list;
     VlUnpacked<IData/*31:0*/, 8> ysyx_24110005_NPC__DOT__ins_Decoder__DOT__imm_mux__DOT__i0__DOT__data_list;
     VlUnpacked<IData/*31:0*/, 32> ysyx_24110005_NPC__DOT__reg_rd__DOT__rf;
+    VlUnpacked<CData/*3:0*/, 1024> ysyx_24110005_NPC__DOT__alu_ins__DOT__op_lut;
     VlUnpacked<CData/*0:0*/, 3> __Vm_traceActivity;
     VlTriggerVec<1> __VstlTriggered;
     VlTriggerVec<3> __VactTriggered;
