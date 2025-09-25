@@ -97,12 +97,10 @@ void Vysyx_24110005_NPC___024root___eval_triggers__act(Vysyx_24110005_NPC___024r
                                          != (IData)(vlSelf->__Vtrigrprev__TOP__rst)));
     vlSelf->__VactTriggered.at(1U) = ((IData)(vlSelf->clk) 
                                       & (~ (IData)(vlSelf->__Vtrigrprev__TOP__clk)));
-    vlSelf->__VactTriggered.at(2U) = ((IData)(vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_visit_valid) 
-                                      != (IData)(vlSelf->__Vtrigrprev__TOP__ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_visit_valid));
+    vlSelf->__VactTriggered.at(2U) = ((IData)(vlSelf->clk) 
+                                      != (IData)(vlSelf->__Vtrigrprev__TOP__clk));
     vlSelf->__Vtrigrprev__TOP__clk = vlSelf->clk;
     vlSelf->__Vtrigrprev__TOP__rst = vlSelf->rst;
-    vlSelf->__Vtrigrprev__TOP__ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_visit_valid 
-        = vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_visit_valid;
     if (VL_UNLIKELY((1U & (~ (IData)(vlSelf->__VactDidInit))))) {
         vlSelf->__VactDidInit = 1U;
         vlSelf->__VactTriggered.at(0U) = 1U;

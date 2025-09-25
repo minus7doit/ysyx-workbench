@@ -6,6 +6,7 @@ module ysyx_24110005_Alu #(
     parameter FUN_WIDTH=3
 ) (
 input clk,
+input [REG_ADDR_WIDTH-1:0]w_addr,
 input [DATA_WIDTH-1:0] pc,
 input [DATA_WIDTH-1:0] src1,
 input [DATA_WIDTH-1:0] src2,
@@ -24,12 +25,11 @@ wire mem_visit_valid;
 wire [DATA_WIDTH-1:0]imm_comp;
 wire [DATA_WIDTH-1:0]snpc;
 
-wire [OP_WIDTH+FUN_WIDTH-1:0]sel;
-
 wire [DATA_WIDTH-1:0]mem_addr ;
 wire [DATA_WIDTH-1:0]mem_wdata ;
 wire mem_wen;
-reg  [7:0]wmask;
+wire  [7:0]wmask;
+
 reg [DATA_WIDTH-1:0] mem_rdata;
 
 
@@ -48,37 +48,80 @@ parameter TYPE_U1=7'b0010111;
 parameter TYPE_R=7'b0110011;
 
 parameter BASE_ADDR=32'h80000000;
-
-//ysyx_24110005_signed_to_comp #(DATA_WIDTH)comp1(src1,src1_comp);
-//ysyx_24110005_signed_to_comp #(DATA_WIDTH)comp2(src2,src2_comp);
-
-//ysyx_24110005_signed_to_comp #(DATA_WIDTH)comp3(imm,  imm_comp);//riscv的立即数是以补码形式存储的，所以不需要转换
-//reg [DATA_WIDTH-1:0]w_data_comp;
-reg [3:0] op_lut [0:1023];
-initial begin
-    op_lut[99]=4'b0000;
-end
-wire [3:0]op;
-
-assign op=op_lut[{fun,opcode}];
-assign sel = {fun,opcode};
+parameter ALL_1 =32'b1;
 
 
+
+function [DATA_WIDTH-1:0] signed_mulh ;
+    input [DATA_WIDTH-1:0]a;
+    input [DATA_WIDTH-1:0]b;
+    reg [2*DATA_WIDTH-1:0]mul_result;
+    begin 
+       //long_a={32'b1,a};
+       //long_b={32'b1,b};
+       mul_result={32'b1,a}*{32'b1,b};
+       signed_mulh=mul_result[2*DATA_WIDTH-1:DATA_WIDTH];
+    end
+endfunction
+
+/*function [DATA_WIDTH-1:0] signed_shifter ;
+    input [DATA_WIDTH-1:0] data;
+    input [5:0]shift_num;
+    integer i;
+    reg [DATA_WIDTH-1:0]shifted_data;
+    begin
+    shifted_data=data;
+       for (i = 0;i<shift_num;i++) begin
+        shifted_data={1'b1,shifted_data[DATA_WIDTH-1:1]};
+       end 
+    signed_shifter=shifted_data;
+    end
+*/
 always@(*)begin
-    if(sel[OP_WIDTH-1:0] == TYPE_B || sel[OP_WIDTH-1:0] == TYPE_J) begin
-        dnpc=pc+imm;   //分支指令和存储指令的下一条指令地址
+    case(opcode)
+    TYPE_J: begin
+        dnpc=pc+imm;   //j,无条件跳转
     end
-    else if (sel[OP_WIDTH-1:0] == TYPE_I2 && sel[OP_WIDTH+FUN_WIDTH-1:OP_WIDTH] == 3'b000) begin
-        dnpc=(src1+imm)&(~32'b1);//jalr指令的下一条指令地址
+    TYPE_B:begin
+        case(fun)
+            3'b000:begin //beq or beqz
+                 dnpc=(src1 == src2)?(pc+imm):snpc;
+            end
+            3'b001:begin//bne or bnez
+                 dnpc=(src1 != src2)?(pc+imm):snpc;
+            end
+            3'b100:begin//blt
+                 dnpc=($signed(src1) < $signed(src2))?(pc+imm):snpc;
+            end
+            3'b101:begin//bge
+                 dnpc=($signed(src1) >= $signed(src2))?(pc+imm):snpc;
+            end
+            3'b110:begin//bltu
+                 dnpc=(src1 < src2)?(pc+imm):snpc;
+            end
+            3'b111:begin
+                 dnpc=(src1>=src2)?(pc+imm):snpc;
+            end
+            default:dnpc=snpc;
+        endcase 
     end
-    else begin
+    TYPE_I2 :begin
+        if(w_addr == 5'b0) begin
+            dnpc=src1;
+        end
+        else begin
+            dnpc=(src1+imm)&(~32'b1);//jalr指令的下一条指令地址
+        end
+        end
+    default: begin
         dnpc=snpc; //默认情况下，下一条指令地址为当前指令地址+4
     end
+    endcase
 end
 
 
 //下面这段为内存读写使用
-always @(*) begin
+/*always @(*) begin
     case(sel)
     {3'b000,TYPE_S}:begin
         wmask=8'b1;
@@ -91,10 +134,11 @@ always @(*) begin
     end
     default:wmask = 8'b0;
     endcase
-end
+end*/
 
+assign wmask=fun[0]?8'b11:(fun[1]?8'b1111:8'b1);
 
-always @(mem_visit_valid) begin
+always @(clk) begin
     if(mem_visit_valid) begin // 有读写请求时
             mem_rdata = pmem_read(mem_addr);
             if (mem_wen) begin // 有写请求时
@@ -106,54 +150,168 @@ always @(mem_visit_valid) begin
     end
 end   
 
+wire [DATA_WIDTH-1:0]mulh;
 
 //下面这段要专门为寄存器读写使用
 always@(*)begin
-    casez(sel) 
-    10'b000_0010011:begin //addi
-        w_data=src1+imm;//地址不能看成负数处理
-        //w_data=(w_data_comp[DATA_WIDTH-1])?{w_data_comp[DATA_WIDTH-1],~(w_data_comp[DATA_WIDTH-2:0]-1'b1)}:w_data_comp;    
-        end                        
-    10'bzzz_1101111:begin //jal
-        w_data=pc+4;
-        end
-    10'b000_1100111:begin //jalr
-        w_data=pc+4;
+    case(opcode) 
+    TYPE_I0:begin
+        case(fun)
+            3'b001:begin//lh
+                w_data={{16{mem_rdata[15]}},mem_rdata[15:0]};
+            end
+            3'b010:begin//lw
+                w_data=mem_rdata;
+            end
+            3'b100:begin//lbu
+                w_data={24'b0,mem_rdata[7:0]};
+            end
+            3'b101:begin//lhu
+                w_data={16'b0,mem_rdata[15:0]};
+            end
+            default:w_data=32'b0;
+        endcase
     end
-    10'bzzz_0010111:begin //auipc
-        w_data=pc+imm; 
+    TYPE_I1:begin
+        case(fun)
+            3'b000:begin 
+                w_data=src1+imm;////addi,地址不能看成负数处理
+            end
+            3'b001:begin
+                w_data=src1<<imm;//slli
+            end
+            3'b011:begin
+                w_data=(src1 == 0)?32'b1:32'b0;//seqz
+            end
+            3'b100:begin
+                w_data=src1^imm;//xori
+            end
+            3'b101:begin
+            if(imm[11:5]== 7'b0100000)begin
+                w_data=$signed(src1)>>>imm[5:0];//srai
+                end
+            else begin
+                w_data=src1>>imm[5:0];//srli
+                end
+            end
+            3'b111:begin
+                w_data=src1&imm;////andi,地址不能看成负数处理
+            end
+            default:w_data=32'b0;
+        endcase 
+    end     
+    TYPE_I2:begin  
+            w_data=pc+4;//jalr
+    end                  
+    TYPE_J:begin
+            w_data=pc+4;//jal
     end
-    10'bzzz_0110111:begin //lui
-        w_data=imm;   
+    
+    TYPE_U1:begin
+            w_data=pc+imm;//auipc  
     end
-    {3'b001,TYPE_I0}:begin
-        w_data={{16{mem_rdata[16]}},mem_rdata[15:0]};
+    TYPE_U0:begin
+            w_data=imm;  //lui
     end
-    {3'b010,TYPE_I0}:begin
-        w_data=mem_rdata;
-    end
-    {3'b100,TYPE_I0}:begin
-        w_data={24'b0,mem_rdata[7:0]};
-    end
-    {3'b101,TYPE_I0}:begin
-        w_data={16'b0,mem_rdata[15:0]};
+    TYPE_R:begin
+        case(fun)
+            3'b000:begin
+                if(imm[6:0]==7'b0000000) begin
+                    w_data=src1+src2;//add
+                end
+                else if(imm[6:0]==7'b0000001) begin
+                    w_data=$signed(src1)*$signed(src2);//mul
+                end
+                else if(imm[6:0]==7'b0100000)begin
+                    w_data=src1-src2;//sub
+                end
+                else begin
+                w_data=0;
+                end
+            end
+            3'b001:begin
+                if(imm[6:0]==7'b0000000) begin
+                    w_data=src1 << src2[4:0];//sll
+                end
+                else if(imm[6:0]==7'b0000001) begin
+                    w_data=mulh;//mulh
+                end
+                else begin
+                    w_data=0;
+                end
+            end
+            3'b010:begin
+                w_data=($signed(src1)<$signed(src2))?32'b1:32'b0;//slt
+            end
+            3'b011:begin
+                w_data=(src1<src2)?32'b1:32'b0;//sltu
+            end
+            3'b100:begin
+                if(imm[6:0]==7'b0000000) begin
+                    w_data=src1^src2;//xor
+                end
+                else if(imm[6:0]==7'b0000001) begin
+                    w_data=$signed(src1)/$signed(src2);//div
+                end
+                else begin
+                    w_data=0;
+                end
+            end
+            3'b101:begin
+                if(imm[6:0]==7'b0000000) begin
+                    w_data=src1 >> src2[4:0];//srl
+                end
+                else if(imm[6:0]==7'b0000001) begin
+                    w_data=src1/src2;//divu
+                end
+                else if(imm[6:0]==7'b0100000) begin
+                   w_data=($signed(src1)>>>(src2[4:0]));
+                end
+                else begin
+                    w_data=0;
+                end
+            end
+            3'b110:begin
+                if(imm[6:0]==7'b0000000) begin
+                    w_data=src1|src2;//or
+                end
+                else if(imm[6:0]==7'b0000001)begin
+                    w_data=$signed(src1)%$signed(src2);//rem
+                end
+                else begin
+                    w_data=0;
+                end
+            end
+            3'b111:begin
+                if(imm[6:0]==7'b0000000) begin
+                    w_data=src1&src2;//and
+                end
+                else if(imm[6:0]==7'b0000001) begin
+                    w_data=src1%src2;//remu
+                end
+                else begin
+                    w_data=0;
+                end
+            end
+            default:w_data=0;
+        endcase
     end
     default:w_data=0; 
     endcase
 end
-
-
+assign mulh=signed_mulh(src1,src2);
 
     assign mem_addr  = src1+imm;
     assign mem_wdata = src2;
     assign mem_visit_valid=(opcode == TYPE_I0)||(opcode == TYPE_S);
     assign mem_wen = (opcode == TYPE_S);
 
-    assign w_finish_sim = (sel == 10'b000_1110011)&&(imm==1);
+    assign w_finish_sim = (opcode == 7'b1110011)&&(imm==1)&&(fun==3'b000);
     assign snpc=pc+4; //默认情况下，下一条指令地址为当前指令地址+4
-    assign wen=((opcode==TYPE_R) || (opcode==TYPE_U0) || (opcode==TYPE_U1) || (opcode==TYPE_I0) || (opcode==TYPE_I1) || ((opcode==TYPE_I2)) || (opcode==TYPE_J)); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器
+    assign wen=((opcode==TYPE_R) || (opcode==TYPE_U0) || (opcode==TYPE_U1) || (opcode==TYPE_I0) || (opcode==TYPE_I1) || ((opcode==TYPE_I2)) || ((opcode==TYPE_J)&& (w_addr != 0))); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器
 
-
+//load-store
+//movsx//shift//mul-longlong
 endmodule
 
 

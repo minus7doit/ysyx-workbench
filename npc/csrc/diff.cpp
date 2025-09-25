@@ -113,13 +113,14 @@ void init_difftest(char* ref_so_file, long img_size, int port) {
 static void checkregs(CPU_state *ref, vaddr_t pc) {
   if (!isa_difftest_checkregs(ref, pc)) {
     sim_break = true;
+    dut->exit_code=1;
     printf("\033[31mDifftest failed at pc =  %08x \033[31m\n", pc);
   }
 }
 
 void difftest_step(vaddr_t pc, vaddr_t npc) {
   CPU_state ref_r;
-  printf("\033[32mDifftest step at pc =  %08x,npc is %08x \033[32m\n", pc,npc);
+  //printf("\033[32mDifftest step at pc =  %08x,npc is %08x \033[32m\n", pc,npc);
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
   checkregs(&ref_r, pc);
   ref_difftest_exec(1);

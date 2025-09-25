@@ -24,6 +24,7 @@ extern vluint64_t sim_time ;
 extern bool sim_break;
 
 extern void cpu_sim(int n);
+extern void sdb_set_batch_mode();
 extern void sdb_mainloop();
 extern void finish_sim();
 extern uint32_t* guest_to_host(uint32_t paddr);

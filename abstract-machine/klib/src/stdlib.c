@@ -68,19 +68,25 @@ void string_generate (char * string ,uint32_t len){
   }
   *string = '\0';
 }
-
-
+static void* top_ptr;
 void *malloc(size_t size) {
   // On native, malloc() will be called during initializaion of C runtime.
   // Therefore do not call panic() here, else it will yield a dead recursion:
   //   panic() -> putchar() -> (glibc) -> malloc() -> panic()
-#if !(defined(__ISA_NATIVE__) && defined(__NATIVE_USE_KLIB__))
-  panic("Not implemented");
-#endif
+//#if !(defined(__ISA_NATIVE__) && defined(__NATIVE_USE_KLIB__))
+if (size == 0) return NULL;
+if(top_ptr == NULL)  top_ptr = heap.start;
+
+if ((uintptr_t)top_ptr + size <= (uintptr_t)heap.end) {
+  void *ret = top_ptr;
+  top_ptr = (void *)((uintptr_t)top_ptr + size);
+  return ret;
+}
+//#endif
   return NULL;
 }
 
 void free(void *ptr) {
+  (void) ptr;
 }
-
 #endif

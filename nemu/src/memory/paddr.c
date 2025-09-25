@@ -51,7 +51,7 @@ void init_mem() {
 }
 
 word_t paddr_read(paddr_t addr, int len) {  
-  printf("program is reading nemu memory: 0x%x \n",addr);
+  //printf("program is reading nemu memory: 0x%x \n",addr);
   #ifdef CONFIG_MTRACE
     printf("program is reading memory: 0x%x \n",addr);
 #endif
@@ -62,7 +62,7 @@ word_t paddr_read(paddr_t addr, int len) {
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  printf("program is writing 0x%08x to nemu memory: 0x%x \n",data,addr);
+  //printf("program is writing 0x%08x to nemu memory: 0x%x \n",data,addr);
 #ifdef CONFIG_MTRACE
     printf("program is writing 0x%08x to memory: 0x%x \n",data,addr);
 #endif

@@ -52,9 +52,10 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
+  //log_write("%s\n", _this->logbuf);//just for npc test
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
-  if(CONFIG_WATCHPOINT) { scan_watchpoint();}
+  IFDEF(CONFIG_WATCHPOINT, scan_watchpoint());
 
 }
 
@@ -106,7 +107,6 @@ static void exec_once(Decode *s, vaddr_t pc) {
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n--) {
-    //printf("Executing instruction at pc = %08x\n", cpu.pc);
     exec_once(&s, cpu.pc);
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);

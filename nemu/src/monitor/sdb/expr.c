@@ -185,7 +185,7 @@ uint32_t find_main_op(int p,int q){//这里除法的优先级被提前了是为�
 								 break; }
 					case '*':priority=2;break;
 					case '/':priority=2;break;
-   					case TK_AND: priority=6;break;
+   				case TK_AND: priority=6;break;
 					case TK_EQ : priority=8;break;		 
 					case TK_UEQ: priority=8;break;		 
 					case TK_DEREF:priority=10;break;

@@ -90,7 +90,7 @@ CFLAGS   += -O2 -MMD -Wall -Werror $(INCFLAGS) \
             -Wno-main -U_FORTIFY_SOURCE -fvisibility=hidden
 CXXFLAGS +=  $(CFLAGS) -ffreestanding -fno-rtti -fno-exceptions
 ASFLAGS  += -MMD $(INCFLAGS)
-LDFLAGS  += -z noexecstack -v $(addprefix -T, $(LDSCRIPTS))
+LDFLAGS  += -z noexecstack  -v $(addprefix -T, $(LDSCRIPTS))
 
 ## 4. Arch-Specific Configurations
 

@@ -21,6 +21,7 @@ bool sim_break=0;
 
 
 void cpu_sim(int n);
+void sdb_set_batch_mode();
 void sdb_mainloop();
 void inst_trace(uint32_t pc, uint32_t inst);
 void init_difftest(char *ref_so_file, long img_size, int port);
@@ -69,6 +70,7 @@ int main(int argc, char** argv, char** env) {
     for (int i = 0; i < argc; i++) {
       printf("argv[%d] = %s\n", i, argv[i]);
      //strcmp(argv[i], "-l") == 0 ? log_file = argv[i + 1] : 0;
+     if(strcmp(argv[i],"-b") == 0) {sdb_set_batch_mode();}
      strcmp(argv[i], "-diff") == 0 ? diff_so_file = argv[i + 1] : 0;
      strcmp(argv[i], "-f") == 0 ? elf_file = argv[i + 1] : 0;
     }

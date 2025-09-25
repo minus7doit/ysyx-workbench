@@ -105,7 +105,7 @@ static int cmd_w(char *args){
 	  wp->result=result;
 	  strcpy(wp->expression,args);//段错误发生在这里
 	  success=true;
-	  printf("wp 's member value is NO:%d EXPR:%s and RESULT %u\n",wp->NO,wp->expression,wp->result);
+	  printf("wp 's member value is NO:%d EXPR:%s and RESULT %u ,hex :0x%08x\n",wp->NO,wp->expression,wp->result,wp->result);
       return 0;
   }
 static int cmd_d(char *args){

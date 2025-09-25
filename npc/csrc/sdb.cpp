@@ -96,6 +96,7 @@ static int cmd_info(char *args) {
     return 0;
 }
 
+
 static struct {
   const char *name;
   const char *description;
@@ -121,6 +122,7 @@ void sdb_mainloop() {
     cmd_c(NULL);
     return;
   }
+  
  for (char *str; (str = rl_gets()) != NULL; ) {
     char *str_end = str + strlen(str);
 

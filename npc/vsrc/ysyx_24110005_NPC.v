@@ -116,6 +116,7 @@ ysyx_24110005_Alu#(
 )
 alu_ins(
     .clk   (clk         ),
+    .w_addr(reg_waddr   ),
     .pc    (pc          ),
     .opcode(opcode      ),
     .fun   (fun         ),

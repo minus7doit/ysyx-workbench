@@ -22,23 +22,31 @@ int out_of_bound(vaddr_t addr){
 }
 
 extern "C" int pmem_read(vaddr_t raddr) {
-  // 总是读取地址为`raddr & ~0x3u`
   printf("\033[34mprogram is reading npc memory: 0x%x \033[34m \n",raddr);
   assert(out_of_bound(raddr));
-  return *(int *)(guest_to_host(raddr & ~0x3u));
+  return *(int *)((uint8_t*)guest_to_host(raddr)+raddr%4);
 }
 
 extern "C" void pmem_write(vaddr_t waddr, int wdata, char wmask) {
     printf("program is writing data:%08x to npc memory: 0x%08x \n",wdata,waddr);
     assert(out_of_bound(waddr));
-    vaddr_t *paddr = guest_to_host(waddr & ~0x3u);
-
-   for (int i = 0; i < 4; i++) {
+    uint8_t *paddr = ((uint8_t*)(guest_to_host(waddr))+ waddr%4);
+  for (int i = 0; i < 4; i++) {
         if (wmask & (1 << i)) {
+            printf("actually writing to addr waddr & ~0x3u:0x%02x\n",((wdata >> (i * 8)) & 0xFF));
             paddr[i] = (wdata >> (i * 8)) & 0xFF; // 写入每个字节
         }
     }
-
+   /*if (wmask == 0xf)
+   {
+    *paddr=wdata;
+   }
+   else if(wmask = 0x3){
+    *paddr=wdata & 0xff;
+   }
+   else{
+     *paddr=wdata & 0xf;
+   }*/
   // 总是往地址为`waddr & ~0x3u`的4字节按写掩码`wmask`写入`wdata`
   // `wmask`中每比特表示`wdata`中1个字节的掩码, 
   // 如`wmask = 0x3`代表只写入最低2个字节, 内存中的其它字节保持不变

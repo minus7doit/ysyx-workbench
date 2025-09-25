@@ -2,10 +2,11 @@
 
 //void difftest_step(vaddr_t pc, vaddr_t npc);
 
+//#include "Vysyx_24110005_NPC__Dpi.h"
 
 void cpu_sim(int n) {
     if(n == -1){
-        while (sim_time < MAX_SIM_TIME) {
+        while (!sim_break) {
             if(sim_time <=3 ){
                 dut->rst = 1;
             }
