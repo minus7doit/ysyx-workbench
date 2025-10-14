@@ -27,11 +27,67 @@ enum {
   nr_reg
 };
 
-static uint8_t *sbuf = NULL;
-static uint32_t *audio_base = NULL;
+static uint8_t *sbuf = NULL; //the data get from am
+static uint32_t *audio_base = NULL;//the data am writen in here or am read from here
+static uint32_t  read_ptr   = 0;      
+
+
+static  void read_sbuf(void *user_data, Uint8 * stream,int len){
+  SDL_LockAudio(); 
+  int nread=(audio_base[reg_count]>len)?len:audio_base[reg_count];  
+  if(audio_base[reg_count]){
+    if(read_ptr+nread > audio_base[reg_sbuf_size]){
+      int n1=audio_base[reg_sbuf_size]-read_ptr;
+      memcpy(stream,sbuf+read_ptr,n1);
+      memcpy(stream+n1,sbuf,nread-n1);
+    }
+    else{
+      memcpy(stream,sbuf+read_ptr,nread);
+    }
+    read_ptr=(read_ptr+nread) % audio_base[reg_sbuf_size];
+    audio_base[reg_count]-=nread;
+  }
+  if(len >nread) {
+    memset(stream + nread ,0 ,len-nread);
+  }
+    SDL_UnlockAudio(); 
+};
+
+static void init_audio_sdl() {
+SDL_AudioSpec s = {};
+if(audio_base[reg_init]){
+s=(SDL_AudioSpec){
+  .freq = audio_base[reg_freq],
+  .format = AUDIO_S16SYS,
+  .channels = audio_base[reg_channels],
+  .samples = audio_base[reg_samples],
+  .callback = read_sbuf,//use this function to write sbuf data to audio;
+  .userdata = NULL
+};   
+
+  int ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
+  if (ret == 0) {
+    SDL_OpenAudio(&s, NULL);
+    SDL_PauseAudio(0);
+  }
+}
+}
 
 static void audio_io_handler(uint32_t offset, int len, bool is_write) {
+    if((offset % 4 == 0 && len == 4)&&is_write) {
+      switch (offset){
+      case reg_init*4:
+        if(audio_base[reg_init]) init_audio_sdl();
+        audio_base[reg_init] = 0;
+        break;
+      case reg_count*4:
+       //  audio_base[reg_count]     = 0;
+            break;
+      default:break;
+      }
+    }
 }
+
 
 void init_audio() {
   uint32_t space_size = sizeof(uint32_t) * nr_reg;
@@ -43,5 +99,11 @@ void init_audio() {
 #endif
 
   sbuf = (uint8_t *)new_space(CONFIG_SB_SIZE);
+  audio_base[reg_count]     = 0;
+  audio_base[reg_sbuf_size] = CONFIG_SB_SIZE;
+
   add_mmio_map("audio-sbuf", CONFIG_SB_ADDR, sbuf, CONFIG_SB_SIZE, NULL);
+
+  IFDEF(CONFIG_HAS_AUDIO, init_audio_sdl());
+
 }

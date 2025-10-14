@@ -1,9 +1,8 @@
 #include <cpu/decode.h>
  // Assuming elf.h contains necessary ELF handling functions
-#include <config/target/native/elf.h>
 #include <memory/vaddr.h>
 #include <elf.h>
-#define MAX_SYMBOLS 1024
+#define MAX_SYMBOLS 4*5120
 #define MAX_CALL_STACK 512
 typedef struct {
     char *name;
@@ -29,7 +28,7 @@ void init_elf(const char *elf_file) {
     FILE *fp = fopen(elf_file, "rb");
     if (fp == NULL) {
         Log("Failed to open ELF file: %s", elf_file);
-        exit(EXIT_FAILURE);
+        return;
     }
     //printf("check elf file %s\n", elf_file);
     Elf32_Ehdr ehdr;
@@ -38,7 +37,7 @@ void init_elf(const char *elf_file) {
     if (num == 0){
         Log("Failed to read ELF header from file: %s", elf_file);
         fclose(fp);
-        exit(EXIT_FAILURE);
+return;
     }
     fseek(fp, ehdr.e_shoff, SEEK_SET);
 

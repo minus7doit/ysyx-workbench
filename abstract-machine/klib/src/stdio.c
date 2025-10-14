@@ -10,6 +10,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
   int d;
   char *s;
   int c;
+  unsigned int x;
  const char *ptr=fmt;
   while(*ptr){
     bool placeholder = false;
@@ -76,6 +77,37 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
                   while(*s){
                   *out++=*s++;
                   }
+                  ptr++;
+                  break;
+        case 'x': x=va_arg(ap,unsigned int);
+                 char bufx[16];
+                 arg_len =0;
+                 i=0;
+                 if(x==0) {
+                  *out++='0';
+                  if(placeholder){
+                      for(int j=0;j<(width-1);j++) {
+                      *out++=place_char;
+                      }
+                    }
+                 }
+                 else {
+                    while(x>0){
+                    arg_len ++;
+                    int t=x%16;
+                    if(t<10) bufx[i++]='0'+t;
+                    else bufx[i++]='a'+(t-10);
+                    x=x/16;
+                    }
+                    if(placeholder){
+                      for(int j=0;j<(width-arg_len);j++) {
+                      *out++=place_char;
+                      }
+                    }
+                    while(i>0){
+                    *out++=bufx[--i];
+                    }
+                 }
                   ptr++;
                   break;
         default:*out++='%';

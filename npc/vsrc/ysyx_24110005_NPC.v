@@ -12,7 +12,7 @@ module ysyx_24110005_NPC(
 
     import "DPI-C" function int pmem_read(input int unsigned raddr);
     import "DPI-C" function void difftest_step(input int unsigned pc, input int unsigned npc);
-
+    import "DPI-C" function void device_update();
 
 
 
@@ -61,9 +61,10 @@ always@(posedge clk)begin
 
    else begin   
     if(!rst) begin
-        inst_trace(pc,current_inst,dnpc);
-        function_trace(pc,current_inst,dnpc);
-        difftest_step(pc,dnpc);
+        //inst_trace(pc,current_inst,dnpc);
+        //function_trace(pc,current_inst,dnpc);
+       //difftest_step(pc,dnpc);
+        device_update();
     end
    end
 end

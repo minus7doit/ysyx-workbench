@@ -13,7 +13,7 @@
 # See the Mulan PSL v2 for more details.
 #**************************************************************************************/
 
-#ifdef CONFIG_DIFFTEST
+
 GUEST_ISA=riscv32
 ENGINE=interpreter
 CONFIG_DIFFTEST_REF_NAME =nemu-$(ENGINE)

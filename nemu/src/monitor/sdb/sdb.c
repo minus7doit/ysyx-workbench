@@ -84,7 +84,7 @@ static int cmd_x(char *args){
 	sscanf(arg2,"%x",&addr);
 	//printf("The hexadecimal string %s is converted to %x in hexadecimal.\n", arg2, addr);
 	for(int i=0;i<len;i++){
-	printf("the data at %x is %x\n",addr,vaddr_read(addr,4));
+	printf("the data at %x is %08x \n,",addr,vaddr_read(addr,4));
 	addr=addr+4;
 	}
 

@@ -17,17 +17,20 @@ void cpu_sim(int n) {
             dut->clk ^= 1;
             dut->eval();
             
-    
+            #if WAVE
             m_trace->dump(sim_time);
-
+            #endif
             sim_time++;
+            #if WAVE
             m_trace->flush();
+             #endif
+
             if(sim_break) {
             if(!dut->exit_code){
                 printf("\033[32mNPC hit a good trap. Ending simulation.\033[32m");
             } 
             else {
-                printf("\033[31mNPC hit a bad trap. Ending simulation.\033[31m");
+                printf("\033[31mNPC hit a bad trap. Ending simulation");
             }
             break;
     }
@@ -46,17 +49,20 @@ void cpu_sim(int n) {
             dut->clk ^= 1;
 
             dut->eval();
-
+            #if WAVE
             m_trace->dump(sim_time);
+            #endif
             sim_time++;
+            #if WAVE
             m_trace->flush();
-            
+            #endif
+           
             if(sim_break) {
                 if(!dut->exit_code){
                    printf("\033[32mNPC hit a good trap. Ending simulation.\033[32m");
                 } 
                 else {
-                    printf("\033[31mNPC hit a bad trap. Ending simulation.\033[31m");
+                     printf("\033[31mNPC hit a bad trap. Ending simulation.\033[31m");
                 }
                 break;
             }

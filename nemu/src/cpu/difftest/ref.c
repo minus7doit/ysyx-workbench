@@ -37,13 +37,7 @@ __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction)
 }
 
 __EXPORT void difftest_regcpy(void *dut, bool direction) {
- /*if (direction /*== DIFFTEST_TO_REF ) {
-    CPU_state *r = (CPU_state *)dut;   // 关键：先强转
-   /* for (int i = 0; i < 32; i++) {
-      printf("npc gpr[%2d] : 0x%08x\n", i, r->gpr[i]);
-    }
-      printf("npc pc       : 0x%08x\n", r->pc);
-  }*/
+
   if (direction == DIFFTEST_TO_REF) {
        memcpy(&cpu, dut, DIFFTEST_REG_SIZE);
   } else {

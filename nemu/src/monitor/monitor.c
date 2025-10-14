@@ -15,7 +15,6 @@
 
 #include <isa.h>
 #include <memory/paddr.h>
-#include <config/target/native/elf.h>
 
 
 void init_rand();

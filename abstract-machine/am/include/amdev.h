@@ -71,4 +71,14 @@ struct gpu_canvas {
   };
 } __attribute__((packed));
 
+struct audio_info_struct
+{
+  int freq;
+  int channels;
+  int samples;
+  int bufsize;
+  int count;
+};
+
+
 #endif

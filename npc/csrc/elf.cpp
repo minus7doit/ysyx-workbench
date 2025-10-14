@@ -2,7 +2,7 @@
  // Assuming elf.h contains necessary ELF handling functions
 #include <elf.h>
 
-#define MAX_SYMBOLS 1024
+#define MAX_SYMBOLS 5120
 #define MAX_CALL_STACK 512
 typedef struct {
     char *name;

@@ -1,15 +1,16 @@
 #include <am.h>
-#include <nemu.h>
-#include<stdio.h>
+#include <npc.h>
+#include <stdio.h>
 #define SYNC_ADDR (VGACTL_ADDR + 4)
 
 static struct gpu_canvas display;
 
 void __am_gpu_init() {
-  uint16_t h = inw(VGACTL_ADDR);  // TODO: get the correct height
-  uint16_t w = inw(VGACTL_ADDR+2);  // TODO: get the correct width
+  uint16_t h = inw(VGACTL_ADDR);  
+  uint16_t w = inw(VGACTL_ADDR+2);  
   display.w=w;
   display.h=h;
+  printf("GPU init: width:%d height :%d\n", w, h);
 }
 
 void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {

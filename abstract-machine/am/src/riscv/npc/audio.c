@@ -1,5 +1,5 @@
 #include <am.h>
-#include <nemu.h>
+#include <npc.h>
 #include <stdio.h>
 
 #define AUDIO_FREQ_ADDR      (AUDIO_ADDR + 0x00)
@@ -20,10 +20,9 @@ void __am_audio_init() {
 }
 
 void __am_audio_config(AM_AUDIO_CONFIG_T *cfg) {
-  audio_info.bufsize=inl(AUDIO_SBUF_SIZE_ADDR);
- // printf("audio bufsize =%d\n\n\n",audio_info.bufsize);
-  cfg->bufsize = audio_info.bufsize;
   cfg->present = false;
+  //audio_info.bufsize=inl(AUDIO_SBUF_SIZE_ADDR);
+  //cfg->bufsize = audio_info.bufsize;
 }
 
 void __am_audio_ctrl(AM_AUDIO_CTRL_T *ctrl) {
@@ -31,7 +30,6 @@ void __am_audio_ctrl(AM_AUDIO_CTRL_T *ctrl) {
   audio_info.freq=ctrl->freq ;
   audio_info.channels=ctrl->channels;
   audio_info.samples= ctrl->samples ;   
-
   
   outl(AUDIO_FREQ_ADDR, audio_info.freq);
   outl(AUDIO_CHANNELS_ADDR, audio_info.channels);

@@ -14,9 +14,7 @@ void Vysyx_24110005_NPC___024root___eval_act(Vysyx_24110005_NPC___024root* vlSel
 }
 
 void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__finish_sim_TOP();
-void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__inst_trace_TOP(IData/*31:0*/ pc, IData/*31:0*/ inst, IData/*31:0*/ npc);
-void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__function_trace_TOP(IData/*31:0*/ pc, IData/*31:0*/ inst, IData/*31:0*/ npc);
-void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__difftest_step_TOP(IData/*31:0*/ pc, IData/*31:0*/ npc);
+void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__device_update_TOP();
 
 VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_sequent__TOP__0(Vysyx_24110005_NPC___024root* vlSelf) {
     if (false && vlSelf) {}  // Prevent unused
@@ -30,15 +28,13 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_sequent__TOP__0(Vysyx_2411
     CData/*0:0*/ __Vdlyvset__ysyx_24110005_NPC__DOT__reg_rd__DOT__rf__v0;
     __Vdlyvset__ysyx_24110005_NPC__DOT__reg_rd__DOT__rf__v0 = 0;
     // Body
-    __Vdlyvset__ysyx_24110005_NPC__DOT__reg_rd__DOT__rf__v0 = 0U;
     if ((IData)(((0x73U == (0x707fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
                  & (1U == vlSelf->ysyx_24110005_NPC__DOT__imm)))) {
         Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__finish_sim_TOP();
     } else if ((1U & (~ (IData)(vlSelf->rst)))) {
-        Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__inst_trace_TOP(vlSelf->ysyx_24110005_NPC__DOT__pc, vlSelf->ysyx_24110005_NPC__DOT__current_inst, vlSelf->ysyx_24110005_NPC__DOT__dnpc);
-        Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__function_trace_TOP(vlSelf->ysyx_24110005_NPC__DOT__pc, vlSelf->ysyx_24110005_NPC__DOT__current_inst, vlSelf->ysyx_24110005_NPC__DOT__dnpc);
-        Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__difftest_step_TOP(vlSelf->ysyx_24110005_NPC__DOT__pc, vlSelf->ysyx_24110005_NPC__DOT__dnpc);
+        Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__device_update_TOP();
     }
+    __Vdlyvset__ysyx_24110005_NPC__DOT__reg_rd__DOT__rf__v0 = 0U;
     if ((((0x33U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
           | ((0x37U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
              | ((0x17U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
@@ -78,16 +74,15 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_sequent__TOP__1(Vysyx_2411
     Vysyx_24110005_NPC__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vysyx_24110005_NPC___024root___nba_sequent__TOP__1\n"); );
     // Init
-    IData/*31:0*/ __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_read__5__Vfuncout;
-    __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_read__5__Vfuncout = 0;
+    IData/*31:0*/ __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_read__3__Vfuncout;
+    __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_read__3__Vfuncout = 0;
     // Body
-    if (((3U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
-         | (0x23U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst)))) {
-        Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__pmem_read_TOP(vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_addr, __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_read__5__Vfuncout);
+    if ((3U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst))) {
+        Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__pmem_read_TOP(vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_addr, __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_read__3__Vfuncout);
         vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata 
-            = __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_read__5__Vfuncout;
-        if ((0x23U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst))) {
-            Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_write_TOP(vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_addr, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata, 
+            = __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_read__3__Vfuncout;
+    } else if ((0x23U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst))) {
+        Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_write_TOP(vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_addr, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata, 
                                                                                 ((0x1000U 
                                                                                 & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                                                  ? 3U
@@ -96,7 +91,6 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_sequent__TOP__1(Vysyx_2411
                                                                                 & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                                                  ? 0xfU
                                                                                  : 1U)));
-        }
     } else {
         vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata = 0U;
     }
@@ -459,18 +453,30 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__0(Vysyx_2411000
                                               & (vlSelf->ysyx_24110005_NPC__DOT__current_inst 
                                                  >> 0xfU))]
                                              : 0U);
-    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__7__b 
+    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__5__b 
         = vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata;
-    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__7__a 
+    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__5__a 
         = vlSelf->ysyx_24110005_NPC__DOT__src1;
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__Vstatic__mul_result 
-        = ((0x100000000ULL | (QData)((IData)(vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__7__a))) 
-           * (0x100000000ULL | (QData)((IData)(vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__7__b))));
-    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__7__Vfuncout 
+        = ((0x100000000ULL | (QData)((IData)(vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__5__a))) 
+           * (0x100000000ULL | (QData)((IData)(vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__5__b))));
+    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__5__Vfuncout 
         = (IData)((vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__Vstatic__mul_result 
                    >> 0x20U));
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mulh 
-        = vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__7__Vfuncout;
+        = vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__5__Vfuncout;
+    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__6__b 
+        = vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata;
+    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__6__a 
+        = vlSelf->ysyx_24110005_NPC__DOT__src1;
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__Vstatic__mul_result 
+        = ((QData)((IData)(vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__6__a)) 
+           * (QData)((IData)(vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__6__b)));
+    vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__6__Vfuncout 
+        = (IData)((vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__Vstatic__mul_result 
+                   >> 0x20U));
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mul_unsigned 
+        = vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__6__Vfuncout;
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_addr 
         = (vlSelf->ysyx_24110005_NPC__DOT__imm + vlSelf->ysyx_24110005_NPC__DOT__src1);
     vlSelf->ysyx_24110005_NPC__DOT__dnpc = ((0x6fU 
@@ -589,7 +595,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                    ? 
                                                   ((0x10U 
                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                    ? 0U
+                                                    ? 0xffffffffU
                                                     : 
                                                    ((8U 
                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -605,9 +611,9 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                         ? 
                                                        ((IData)(4U) 
                                                         + vlSelf->ysyx_24110005_NPC__DOT__pc)
-                                                        : 0U)
-                                                       : 0U)
-                                                      : 0U)
+                                                        : 0xffffffffU)
+                                                       : 0xffffffffU)
+                                                      : 0xffffffffU)
                                                      : 
                                                     ((4U 
                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -620,10 +626,10 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                         ? 
                                                        ((IData)(4U) 
                                                         + vlSelf->ysyx_24110005_NPC__DOT__pc)
-                                                        : 0U)
-                                                       : 0U)
-                                                      : 0U)))
-                                                   : 0U)
+                                                        : 0xffffffffU)
+                                                       : 0xffffffffU)
+                                                      : 0xffffffffU)))
+                                                   : 0xffffffffU)
                                                   : 
                                                  ((0x20U 
                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -633,7 +639,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                     ? 
                                                    ((8U 
                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                     ? 0U
+                                                     ? 0xffffffffU
                                                      : 
                                                     ((4U 
                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -644,8 +650,8 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                       ((1U 
                                                         & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                         ? vlSelf->ysyx_24110005_NPC__DOT__imm
-                                                        : 0U)
-                                                       : 0U)
+                                                        : 0xffffffffU)
+                                                       : 0xffffffffU)
                                                       : 
                                                      ((2U 
                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -676,7 +682,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                               & vlSelf->ysyx_24110005_NPC__DOT__imm))
                                                              ? 
                                                             VL_MODDIV_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             : 0U))
+                                                             : 0xffffffffU))
                                                            : 
                                                           ((0U 
                                                             == 
@@ -692,7 +698,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                               & vlSelf->ysyx_24110005_NPC__DOT__imm))
                                                              ? 
                                                             VL_MODDIVS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             : 0U)))
+                                                             : 0xffffffffU)))
                                                           : 
                                                          ((0x1000U 
                                                            & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -722,7 +728,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                              VL_SHIFTRS_III(32,32,5, vlSelf->ysyx_24110005_NPC__DOT__src1, 
                                                                             (0x1fU 
                                                                              & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata))
-                                                              : 0U)))
+                                                              : 0xffffffffU)))
                                                            : 
                                                           ((0U 
                                                             == 
@@ -738,7 +744,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                               & vlSelf->ysyx_24110005_NPC__DOT__imm))
                                                              ? 
                                                             VL_DIVS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             : 0U))))
+                                                             : 0xffffffffU))))
                                                          : 
                                                         ((0x2000U 
                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -746,10 +752,22 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                          ((0x1000U 
                                                            & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                            ? 
-                                                          ((vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                            < vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                            ? 1U
-                                                            : 0U)
+                                                          ((0U 
+                                                            == 
+                                                            (0x7fU 
+                                                             & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                            ? 
+                                                           ((vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                             < vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                             ? 1U
+                                                             : 0U)
+                                                            : 
+                                                           ((1U 
+                                                             == 
+                                                             (0x7fU 
+                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                             ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mul_unsigned
+                                                             : 0xffffffffU))
                                                            : 
                                                           (VL_LTS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
                                                             ? 1U
@@ -773,7 +791,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                              (0x7fU 
                                                               & vlSelf->ysyx_24110005_NPC__DOT__imm))
                                                              ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mulh
-                                                             : 0U))
+                                                             : 0xffffffffU))
                                                            : 
                                                           ((0U 
                                                             == 
@@ -797,17 +815,17 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                               ? 
                                                              (vlSelf->ysyx_24110005_NPC__DOT__src1 
                                                               - vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                              : 0U))))))
-                                                        : 0U)
-                                                       : 0U)))
-                                                    : 0U)
+                                                              : 0xffffffffU))))))
+                                                        : 0xffffffffU)
+                                                       : 0xffffffffU)))
+                                                    : 0xffffffffU)
                                                    : 
                                                   ((0x10U 
                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                     ? 
                                                    ((8U 
                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                     ? 0U
+                                                     ? 0xffffffffU
                                                      : 
                                                     ((4U 
                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -820,8 +838,8 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                         ? 
                                                        (vlSelf->ysyx_24110005_NPC__DOT__pc 
                                                         + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                        : 0U)
-                                                       : 0U)
+                                                        : 0xffffffffU)
+                                                       : 0xffffffffU)
                                                       : 
                                                      ((2U 
                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -840,7 +858,9 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                            ? 
                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
                                                            & vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                           : 0U)
+                                                           : 
+                                                          (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                           | vlSelf->ysyx_24110005_NPC__DOT__imm))
                                                           : 
                                                          ((0x1000U 
                                                            & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -888,7 +908,10 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                             == vlSelf->ysyx_24110005_NPC__DOT__src1)
                                                             ? 1U
                                                             : 0U)
-                                                           : 0U)
+                                                           : 
+                                                          (VL_LTS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                                            ? 1U
+                                                            : 0U))
                                                           : 
                                                          ((0x1000U 
                                                            & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -902,16 +925,16 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                            : 
                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
                                                            + vlSelf->ysyx_24110005_NPC__DOT__imm))))
-                                                        : 0U)
-                                                       : 0U)))
+                                                        : 0xffffffffU)
+                                                       : 0xffffffffU)))
                                                     : 
                                                    ((8U 
                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                     ? 0U
+                                                     ? 0xffffffffU
                                                      : 
                                                     ((4U 
                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                      ? 0U
+                                                      ? 0xffffffffU
                                                       : 
                                                      ((2U 
                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -924,7 +947,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                          ? 
                                                         ((0x2000U 
                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                          ? 0U
+                                                          ? 0xffffffffU
                                                           : 
                                                          ((0x1000U 
                                                            & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
@@ -940,7 +963,7 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                           ? 
                                                          ((0x1000U 
                                                            & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 0U
+                                                           ? 0xffffffffU
                                                            : vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)
                                                           : 
                                                          ((0x1000U 
@@ -953,9 +976,16 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root___nba_comb__TOP__1(Vysyx_2411000
                                                             << 0x10U) 
                                                            | (0xffffU 
                                                               & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata))
-                                                           : 0U)))
-                                                        : 0U)
-                                                       : 0U))))));
+                                                           : 
+                                                          (((- (IData)(
+                                                                       (1U 
+                                                                        & (vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata 
+                                                                           >> 7U)))) 
+                                                            << 8U) 
+                                                           | (0xffU 
+                                                              & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)))))
+                                                        : 0xffffffffU)
+                                                       : 0xffffffffU))))));
 }
 
 void Vysyx_24110005_NPC___024root___eval_nba(Vysyx_24110005_NPC___024root* vlSelf) {

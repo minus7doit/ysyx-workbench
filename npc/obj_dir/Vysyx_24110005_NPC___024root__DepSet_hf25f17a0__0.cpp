@@ -68,6 +68,14 @@ VL_INLINE_OPT void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC_
     difftest_step(pc__Vcvt, npc__Vcvt);
 }
 
+extern "C" void device_update();
+
+VL_INLINE_OPT void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__device_update_TOP() {
+    VL_DEBUG_IF(VL_DBG_MSGF("+    Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__device_update_TOP\n"); );
+    // Body
+    device_update();
+}
+
 extern "C" void pmem_write(unsigned int waddr, int wdata, char wmask);
 
 VL_INLINE_OPT void Vysyx_24110005_NPC___024root____Vdpiimwrap_ysyx_24110005_NPC__DOT__alu_ins__DOT__pmem_write_TOP(IData/*31:0*/ waddr, IData/*31:0*/ wdata, CData/*7:0*/ wmask) {
@@ -97,14 +105,13 @@ void Vysyx_24110005_NPC___024root___eval_triggers__act(Vysyx_24110005_NPC___024r
                                          != (IData)(vlSelf->__Vtrigrprev__TOP__rst)));
     vlSelf->__VactTriggered.at(1U) = ((IData)(vlSelf->clk) 
                                       & (~ (IData)(vlSelf->__Vtrigrprev__TOP__clk)));
-    vlSelf->__VactTriggered.at(2U) = ((IData)(vlSelf->clk) 
-                                      != (IData)(vlSelf->__Vtrigrprev__TOP__clk));
+    vlSelf->__VactTriggered.at(2U) = ((~ (IData)(vlSelf->clk)) 
+                                      & (IData)(vlSelf->__Vtrigrprev__TOP__clk));
     vlSelf->__Vtrigrprev__TOP__clk = vlSelf->clk;
     vlSelf->__Vtrigrprev__TOP__rst = vlSelf->rst;
     if (VL_UNLIKELY((1U & (~ (IData)(vlSelf->__VactDidInit))))) {
         vlSelf->__VactDidInit = 1U;
         vlSelf->__VactTriggered.at(0U) = 1U;
-        vlSelf->__VactTriggered.at(2U) = 1U;
     }
 #ifdef VL_DEBUG
     if (VL_UNLIKELY(vlSymsp->_vm_contextp__->debug())) {

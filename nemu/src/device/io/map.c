@@ -32,15 +32,16 @@ uint8_t* new_space(int size) {
   return p;
 }
 
-static void check_bound(IOMap *map, paddr_t addr) {
+static void check_bound(IOMap *map, paddr_t addr, const char *op) {
   if (map == NULL) {
-    Assert(map != NULL, "address (" FMT_PADDR ") is out of bound at pc = " FMT_WORD, addr, cpu.pc);
+    Assert(map != NULL, "address (" FMT_PADDR ") is out of bound during %s operation at pc = " FMT_WORD, addr, op, cpu.pc);
   } else {
     Assert(addr <= map->high && addr >= map->low,
-        "address (" FMT_PADDR ") is out of bound {%s} [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
-        addr, map->name, map->low, map->high, cpu.pc);
+        "address (" FMT_PADDR ") is out of bound {%s} [" FMT_PADDR ", " FMT_PADDR "] during %s operation at pc = " FMT_WORD,
+        addr, map->name, map->low, map->high, op, cpu.pc);
   }
 }
+
 
 static void invoke_callback(io_callback_t c, paddr_t offset, int len, bool is_write) {
   if (c != NULL) { c(offset, len, is_write); }
@@ -53,25 +54,29 @@ void init_map() {
 }
 
 word_t map_read(paddr_t addr, int len, IOMap *map) {
-
   assert(len >= 1 && len <= 8);
-  check_bound(map, addr);
+  check_bound(map, addr, "read");  // 在检查时传递 "read" 操作类型
+
   #ifdef CONFIG_DTRACE
-  printf("nemu is reading device : %s, located in addr [0x%08x,0x%08x]\n",map->name ,map->low, map->high);
+  printf("nemu is reading device : %s, located in addr [0x%08x, 0x%08x]\n", map->name, map->low, map->high);
   #endif
+
   paddr_t offset = addr - map->low;
-  invoke_callback(map->callback, offset, len, false); // prepare data to read
+  invoke_callback(map->callback, offset, len, false);  // prepare data to read
   word_t ret = host_read(map->space + offset, len);
   return ret;
 }
 
 void map_write(paddr_t addr, int len, word_t data, IOMap *map) {
   assert(len >= 1 && len <= 8);
-  check_bound(map, addr);
+  check_bound(map, addr, "write");  // 在检查时传递 "write" 操作类型
+
   #ifdef CONFIG_DTRACE
-  printf("nemu is writing device : %s, located in addr [0x%08x,0x%08x]\n",map->name ,map->low, map->high);
+   printf("nemu is writing %s, located in addr [0x%08x, 0x%08x]\n", map->name, map->low, map->high);
+  printf("data: %d to addr: 0x%08x\n", data, addr);
   #endif
+
   paddr_t offset = addr - map->low;
   host_write(map->space + offset, len, data);
-  invoke_callback(map->callback, offset, len, true);
+  invoke_callback(map->callback, offset, len, true);  // Indicate a write operation
 }
