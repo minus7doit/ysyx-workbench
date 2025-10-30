@@ -23,7 +23,7 @@ static inline void outl(uintptr_t addr, uint32_t data) { *(volatile uint32_t *)a
 enum { MODE_U, MODE_S, MODE_M = 3 };
 #define MSTATUS_MXR  (1 << 19)
 #define MSTATUS_SUM  (1 << 18)
-#define YIELD_TRAP 11
+#define YIELD_TRAP 8
 
 #if __riscv_xlen == 64
 #define MSTATUS_SXL  (2ull << 34)

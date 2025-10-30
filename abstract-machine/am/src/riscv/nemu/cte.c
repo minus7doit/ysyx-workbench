@@ -15,7 +15,6 @@ Context* __am_irq_handle(Context *c) {
     c = user_handler(ev, c);
     assert(c != NULL);
   }
-
   return c;
 }
 
@@ -30,9 +29,16 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 
   return true;
 }
-
+//就是把现在的上下文信息保存到kstack里，并且返回栈顶指针
 Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
-  return NULL;
+  uintptr_t sp = (uintptr_t)kstack.end;
+  sp &= ~(uintptr_t)0xF;
+  Context *cp = (Context *)(sp - sizeof(Context));
+
+  cp->mstatus = 0x1800; //set mpp to machine mode
+  cp->mepc = (uintptr_t)(entry); //pc
+  cp->gpr[10] = (uintptr_t)(arg); //a0
+  return cp ;
 }
 
 void yield() {

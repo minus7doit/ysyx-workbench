@@ -29,7 +29,7 @@ int atoi(const char* nptr) {
   return x;
 }
 
-char *itoa(int value, char *str, int base) {
+char *am_itoa(int value, char *str, int base) {
   char *p = str;
   int sign = value < 0 && base == 10 ? -1 : 1;
 

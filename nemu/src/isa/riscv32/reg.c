@@ -24,6 +24,7 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
+CSRs csr={};
 void isa_reg_display() {
 		int regs_num=sizeof(regs)/sizeof(regs[0]);
 		if(regs_num == 0) printf(" There is no reg in this program\n");

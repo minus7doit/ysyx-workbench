@@ -20,7 +20,7 @@ static void irq_handle(Context *c) {
   c->ksp = thiscpu->ksp;
 
   if (thiscpu->ev.event == EVENT_ERROR) {
-    printf("Unhandle signal '%s' at pc = %p, badaddr = %p, cause = 0x%x\n",
+    printf("Unhandle signal '%s' at pc = %08x, badaddr = %08x, cause = 0x%x\n",
       thiscpu->ev.msg, AM_REG_PC(&c->uc), thiscpu->ev.ref, thiscpu->ev.cause);
     assert(0);
   }

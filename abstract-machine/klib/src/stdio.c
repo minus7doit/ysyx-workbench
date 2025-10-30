@@ -2,12 +2,12 @@
 #include <klib.h>
 #include <klib-macros.h>
 #include <stdarg.h>
+#include <stdbool.h>
 //#include<stdio.h>
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 #define MAX_PRINT_NUM 1024
 
 int vsprintf(char *out, const char *fmt, va_list ap) {
-  int d;
   char *s;
   int c;
   unsigned int x;
@@ -28,45 +28,53 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
             width = width*10 + (*ptr - '0');
             ptr++;
         }
+        bool is_long=false;
+        if((*ptr)=='l'){
+          is_long = true;
+          ptr++;
+         }
 
         switch(*ptr){
         case 'c': c=va_arg(ap,int);
                   *out++=(char)c;
                   ptr++;
                   break;
-        case 'd': d=va_arg(ap,int);
+
+        case 'd': 
+                  long d;
+                  if(is_long)d=va_arg(ap,long);else d=va_arg(ap,int);
                   if(d<0){
                    *out++='-';
                     d=-d;
                   }
-                 char buf[12];
-                 uint32_t arg_len =0;
-                 int i=0;
-                 if(d==0) {
-                  *out++='0';
-                  if(placeholder){
-                      for(int j=0;j<(width-1);j++) {
-                      *out++=place_char;
-                      }
-                    }
-                 }
-                 else {
-                    while(d>0){
-                    arg_len ++;
-                    buf[i++]='0'+d%10;
-                    d=d/10;
-                    }
+                  char buf[32];
+                  uint32_t arg_len =0;
+                  int i=0;
+                  if(d==0) {
+                    *out++='0';
                     if(placeholder){
-                      for(int j=0;j<(width-arg_len);j++) {
-                      *out++=place_char;
+                        for(int j=0;j<(width-1);j++) {
+                        *out++=place_char;
+                        }
                       }
-                    }
-                    while(i>0){
-                    *out++=buf[--i];
-                    }
-                 }
-                  ptr++;
-                  break;
+                  }
+                  else {
+                      while(d>0){
+                      arg_len ++;
+                      buf[i++]='0'+d%10;
+                      d=d/10;
+                      }
+                      if(placeholder){
+                        for(int j=0;j<(width-arg_len);j++) {
+                        *out++=place_char;
+                        }
+                      }
+                      while(i>0){
+                      *out++=buf[--i];
+                      }
+                  }
+                    ptr++;
+                    break;
         case 's': s=va_arg(ap,char *);
                     if(placeholder){
                       for(int j=0;j<width;j++) {

@@ -21,20 +21,20 @@
 
 static inline word_t csr_read(uint32_t id) {
   switch (id) {
-    case CSR_MSTATUS: return cpu.csr.mstatus;
-    case CSR_MTVEC:   return cpu.csr.mtvec;
-    case CSR_MEPC:    return cpu.csr.mepc;
-    case CSR_MCAUSE:  return cpu.csr.mcause;
+    case CSR_MSTATUS: return csr.mstatus;
+    case CSR_MTVEC:   return csr.mtvec;
+    case CSR_MEPC:    return csr.mepc;
+    case CSR_MCAUSE:  return csr.mcause;
     default: assert(0); return 0;
   }
 }
 
 static inline void csr_write(uint32_t id, word_t val) {
   switch (id) {
-    case CSR_MSTATUS:cpu.csr.mstatus = val; break;
-    case CSR_MTVEC:  cpu.csr.mtvec  = val;  break;
-    case CSR_MEPC:   cpu.csr.mepc   = val;  break;
-    case CSR_MCAUSE: cpu.csr.mcause = val;  break;
+    case CSR_MSTATUS:csr.mstatus = val; break;
+    case CSR_MTVEC:  csr.mtvec  = val;  break;
+    case CSR_MEPC:   csr.mepc   = val;  break;
+    case CSR_MCAUSE: csr.mcause = val;  break;
     default: assert(0);
   }
 }

@@ -17,10 +17,12 @@
 #include <cpu/cpu.h>
 
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
-  cpu.csr.mcause = NO;
-  cpu.csr.mepc = epc;
+  csr.mcause = NO;
+  csr.mepc = epc;
+  #ifdef CONFIG_ETRACE
   printf("\033[34mException Happened at 0x%08x!!! mcause code is %d\033[34m\n ",epc,NO);
-  return cpu.csr.mtvec;
+  #endif
+  return csr.mtvec;
 }
 
 word_t isa_query_intr() {
