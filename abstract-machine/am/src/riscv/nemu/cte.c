@@ -1,7 +1,6 @@
 #include <am.h>
 #include <riscv/riscv.h>
 #include <klib.h>
-#include<stdio.h>
 static Context* (*user_handler)(Event, Context*) = NULL;
 
 Context* __am_irq_handle(Context *c) {
@@ -23,7 +22,6 @@ extern void __am_asm_trap(void);
 bool cte_init(Context*(*handler)(Event, Context*)) {
   // initialize exception entry
   asm volatile("csrw mtvec, %0" : : "r"(__am_asm_trap));
-
   // register event handler
   user_handler = handler;
 
@@ -33,7 +31,8 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
   uintptr_t sp = (uintptr_t)kstack.end;
   sp &= ~(uintptr_t)0xF;
-  Context *cp = (Context *)(sp - sizeof(Context));
+  //Context *cp = (Context *)(sp - sizeof(Context));
+  Context *cp = (Context *)sp - 1;
 
   cp->mstatus = 0x1800; //set mpp to machine mode
   cp->mepc = (uintptr_t)(entry); //pc

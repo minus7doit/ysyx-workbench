@@ -50,7 +50,7 @@ paddr_t isa_mmu_translate(vaddr_t vaddr, int len, int type);
 vaddr_t isa_raise_intr(word_t NO, vaddr_t epc);
 #define INTR_EMPTY ((word_t)-1)
 word_t isa_query_intr();
-#define YIELD_TRAP 8
+#define YIELD_TRAP 11
 enum {
   CSR_MSTATUS = 0x300,
   CSR_MTVEC   = 0x305,

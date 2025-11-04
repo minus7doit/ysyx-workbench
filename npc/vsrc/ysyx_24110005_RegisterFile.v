@@ -6,7 +6,7 @@ module ysyx_24110005_RegisterFile
   input wen,
   input [DATA_WIDTH-1:0]      w_data,
   input [REG_ADDR_WIDTH-1:0]  w_addr,
-  input  [REG_ADDR_WIDTH-1:0] r_addr1,
+  input [REG_ADDR_WIDTH-1:0] r_addr1,
   input [REG_ADDR_WIDTH-1:0]  r_addr2,
   output [DATA_WIDTH-1:0]     r_data1,
   output [DATA_WIDTH-1:0]     r_data2,

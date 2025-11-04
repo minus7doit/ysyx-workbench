@@ -4,7 +4,7 @@
 #define PMEM_RIGHT ((vaddr_t)PMEM_BASE + MEM_SIZE - 1)
 
 int32_t inst_mem[MEM_SIZE/4];//模拟指令存储器,每个周期只读出一条指令
-#define DIFF_ENABLE 0
+#define DIFF_ENABLE 1
 #if DIFF_ENABLE
 #define ZERO_OR_ONE 0
 #else
@@ -73,7 +73,9 @@ extern "C" void pmem_write(vaddr_t waddr, int wdata, char wmask) {
 
   #ifdef CONFIG_HAS_SERIAL
     if (waddr == CONFIG_SERIAL_MMIO) { 
-      putchar((unsigned char)wdata); return;
+      putchar((unsigned char)wdata); 
+      fflush(stdout); 
+      return;
     }
   #endif
 

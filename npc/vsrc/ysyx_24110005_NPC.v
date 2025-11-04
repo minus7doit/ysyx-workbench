@@ -63,7 +63,7 @@ always@(posedge clk)begin
     if(!rst) begin
         //inst_trace(pc,current_inst,dnpc);
         //function_trace(pc,current_inst,dnpc);
-       //difftest_step(pc,dnpc);
+       // difftest_step(pc,dnpc);
         device_update();
     end
    end

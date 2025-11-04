@@ -38,29 +38,34 @@ import "DPI-C" function int pmem_read(input int unsigned raddr);
 import "DPI-C" function void pmem_write(input int unsigned waddr, input int wdata, input byte wmask);
 
 
-parameter TYPE_I0=7'b0000011;
-parameter TYPE_I1=7'b0010011;
-parameter TYPE_I2=7'b1100111;
-//parameter TYPE_I3=7'b1110011;
-parameter TYPE_B=7'b1100011;
-parameter TYPE_J=7'b1101111;
-parameter TYPE_S=7'b0100011;
-parameter TYPE_U0=7'b0110111;
-parameter TYPE_U1=7'b0010111;
-parameter TYPE_R=7'b0110011;
+parameter TYPE_I0 =7'b0000011;
+parameter TYPE_I1 =7'b0010011;
+parameter TYPE_I2 =7'b1100111;
+parameter TYPE_CSR=7'b1110011;
+parameter TYPE_B  =7'b1100011;
+parameter TYPE_J  =7'b1101111;
+parameter TYPE_S  =7'b0100011;
+parameter TYPE_U0 =7'b0110111;
+parameter TYPE_U1 =7'b0010111;
+parameter TYPE_R  =7'b0110011;
+
 
 parameter BASE_ADDR=32'h80000000;
 parameter ALL_1 =32'b1;
-
-
+ 
+parameter CSR_MSTATUS = 12'h300;
+parameter CSR_MTVEC   = 12'h305;
+parameter CSR_MEPC    = 12'h341;
+parameter CSR_MCAUSE  = 12'h342;
+parameter CSR_ECALL   = 12'h0;
+parameter CSR_MRET    = 12'h302;
+parameter YIELD       = 11;
 
 function [DATA_WIDTH-1:0] signed_mulh ;
     input [DATA_WIDTH-1:0]a;
     input [DATA_WIDTH-1:0]b;
     reg [2*DATA_WIDTH-1:0]mul_result;
     begin 
-       //long_a={32'b1,a};
-       //long_b={32'b1,b};
        mul_result={32'b1,a}*{32'b1,b};
        signed_mulh=mul_result[2*DATA_WIDTH-1:DATA_WIDTH];
     end
@@ -71,26 +76,11 @@ function [DATA_WIDTH-1:0] unsigned_mulh ;
     input [DATA_WIDTH-1:0]b;
     reg [2*DATA_WIDTH-1:0]mul_result;
     begin 
-       //long_a={32'b1,a};
-       //long_b={32'b1,b};
        mul_result={32'b0,a}*{32'b0,b};
        unsigned_mulh=mul_result[2*DATA_WIDTH-1:DATA_WIDTH];
     end
 endfunction
 
-/*function [DATA_WIDTH-1:0] signed_shifter ;
-    input [DATA_WIDTH-1:0] data;
-    input [5:0]shift_num;
-    integer i;
-    reg [DATA_WIDTH-1:0]shifted_data;
-    begin
-    shifted_data=data;
-       for (i = 0;i<shift_num;i++) begin
-        shifted_data={1'b1,shifted_data[DATA_WIDTH-1:1]};
-       end 
-    signed_shifter=shifted_data;
-    end
-*/
 always@(*)begin
     case(opcode)
     TYPE_J: begin
@@ -126,7 +116,16 @@ always@(*)begin
         else begin
             dnpc=(src1+imm)&(~32'b1);//jalr指令的下一条指令地址
         end
+    end
+    TYPE_CSR :begin
+        if((fun==3'b0) && (imm[11:0] == CSR_ECALL))begin
+            dnpc=m_tvec;
         end
+        else if((fun==3'b0) && (imm[11:0] == CSR_MRET))begin
+            dnpc=m_epc;
+        end
+        else dnpc=snpc;
+    end
     default: begin
         dnpc=snpc; //默认情况下，下一条指令地址为当前指令地址+4
     end
@@ -134,21 +133,6 @@ always@(*)begin
 end
 
 
-//下面这段为内存读写使用
-/*always @(*) begin
-    case(sel)
-    {3'b000,TYPE_S}:begin
-        wmask=8'b1;
-    end
-    {3'b001,TYPE_S}:begin
-        wmask=8'b11;
-    end
-    {3'b010,TYPE_S}:begin
-        wmask=8'b1111;
-    end
-    default:wmask = 8'b0;
-    endcase
-end*/
 
 assign wmask=fun[0]?8'b11:(fun[1]?8'b1111:8'b1);
 
@@ -226,7 +210,10 @@ always@(*)begin
     end     
     TYPE_I2:begin  
             w_data=pc+4;//jalr
-    end                  
+    end 
+    TYPE_CSR:begin
+            w_data=csr_data;//csrr,csrrw,csrrwi
+    end                 
     TYPE_J:begin
             w_data=pc+4;//jal
     end
@@ -243,7 +230,7 @@ always@(*)begin
                     w_data=src1+src2;//add
                 end
                 else if(imm[6:0]==7'b0000001) begin
-                    w_data=$signed(src1)*$signed(src2);//mul
+                    w_data=$signed(src1)*$signed(src2);//CBD
                 end
                 else if(imm[6:0]==7'b0100000)begin
                     w_data=src1-src2;//sub or neg
@@ -330,6 +317,68 @@ always@(*)begin
     default:w_data=32'hffffffff;  
     endcase
 end
+
+
+reg [DATA_WIDTH-1:0] csr_data;
+wire csr_wen;
+
+reg [DATA_WIDTH-1:0] m_status;
+reg [DATA_WIDTH-1:0] m_cause;
+reg [DATA_WIDTH-1:0] m_tvec;
+reg [DATA_WIDTH-1:0] m_epc;
+
+//对同一个寄存器先读后写
+//只需要实例化用到的少数寄存器即可，而不是地址位宽个
+
+initial begin
+    m_status=32'h1800;
+end
+
+always@(*)begin
+     case (imm[11:0])
+        CSR_MSTATUS:begin
+            csr_data=m_status;        
+        end 
+        CSR_MTVEC:begin
+            csr_data=m_tvec;  
+        end
+        CSR_MEPC:begin
+            csr_data=m_epc;  
+        end
+        CSR_MCAUSE:begin
+            csr_data=m_cause;
+        end
+        default:csr_data=32'hffffffff;
+        endcase 
+end
+
+always @(posedge clk) begin
+    if(csr_wen)begin
+        case (imm[11:0])
+            CSR_MSTATUS:begin
+                m_status<=src1;        
+            end 
+            CSR_MTVEC:begin
+                m_tvec<=src1;        
+            end
+            CSR_MEPC:begin
+                m_epc<=src1;        
+            end
+            CSR_MCAUSE:begin
+                m_cause<=src1;        
+            end
+            CSR_ECALL:begin
+                m_epc<=pc;
+                m_cause<=YIELD;        
+            end
+            default:m_epc<=32'hffffffff;
+        endcase 
+    end
+end
+
+
+    assign csr_wen=(opcode==TYPE_CSR)&&((fun==3'b001)|(fun==3'b101)|((fun==3'b000)&&(imm[11:0]==CSR_ECALL))) ;
+
     assign mulh=signed_mulh(src1,src2);
     assign mul_unsigned=unsigned_mulh(src1,src2);
     assign mem_addr  = src1+imm;
@@ -340,10 +389,8 @@ end
 
     assign w_finish_sim = (opcode == 7'b1110011)&&(imm==1)&&(fun==3'b000);
     assign snpc=pc+4; //默认情况下，下一条指令地址为当前指令地址+4
-    assign wen=((opcode==TYPE_R) || (opcode==TYPE_U0) || (opcode==TYPE_U1) || (opcode==TYPE_I0) || (opcode==TYPE_I1) || ((opcode==TYPE_I2)) || ((opcode==TYPE_J)&& (w_addr != 0))); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器
+    assign wen=((opcode==TYPE_R) || (opcode==TYPE_U0) || (opcode==TYPE_U1) || (opcode==TYPE_I0) || (opcode==TYPE_I1) || ((opcode==TYPE_I2)) || ((opcode==TYPE_J)&& (w_addr != 0))|| ((opcode==TYPE_CSR)&& (w_addr != 0))); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器
 
-//load-store
-//movsx//shift//mul-longlong
 endmodule
 
 

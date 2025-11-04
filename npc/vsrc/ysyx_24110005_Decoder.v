@@ -17,7 +17,7 @@ module ysyx_24110005_Decoder #(
     parameter TYPE_I0=7'b0000011;
     parameter TYPE_I1=7'b0010011;
     //parameter TYPE_I2=7'b1100111;
-    parameter TYPE_I3=7'b1110011;
+    parameter TYPE_CSR=7'b1110011;
     parameter TYPE_B=7'b1100011;
     parameter TYPE_J=7'b1101111;
     parameter TYPE_S=7'b0100011;
@@ -45,7 +45,7 @@ imm_mux (
     TYPE_U1,{inst[31:12],12'b0},
     TYPE_I0,{{20{inst[31]}},inst[31:20]},
     TYPE_I1,{{20{inst[31]}},inst[31:20]},
-    TYPE_I3,{{20{inst[31]}},inst[31:20]},
+    TYPE_CSR,{{20{inst[31]}},inst[31:20]},
     TYPE_B,{{19{inst[31]}},inst[31],inst[7],inst[30:25],inst[11:8],1'b0},
     TYPE_J,{{11{inst[31]}},inst[31],inst[19:12],inst[20],inst[30:21],1'b0},
     TYPE_S,{{20{inst[31]}},inst[31:25],inst[11:7]},

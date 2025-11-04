@@ -10,7 +10,7 @@ void __am_gpu_init() {
   uint16_t w = inw(VGACTL_ADDR+2);  
   display.w=w;
   display.h=h;
-  printf("GPU init: width:%d height :%d\n", w, h);
+  //printf("GPU init: width:%d height :%d\n", w, h);
 }
 
 void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {

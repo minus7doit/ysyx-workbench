@@ -44,6 +44,7 @@ VL_ATTR_COLD void Vysyx_24110005_NPC___024root___eval_initial__TOP(Vysyx_2411000
     vlSelf->ysyx_24110005_NPC__DOT__ins_Decoder__DOT__imm_mux__DOT__i0__DOT__key_list[7U] = 0x17U;
     vlSelf->ysyx_24110005_NPC__DOT__ins_Decoder__DOT__imm_mux__DOT__i0__DOT__key_list[8U] = 0x37U;
     vlSelf->ysyx_24110005_NPC__DOT__pc = 0x80000000U;
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_status = 0x1800U;
 }
 
 VL_ATTR_COLD void Vysyx_24110005_NPC___024root___eval_final(Vysyx_24110005_NPC___024root* vlSelf) {
@@ -477,506 +478,505 @@ VL_ATTR_COLD void Vysyx_24110005_NPC___024root___stl_sequent__TOP__0(Vysyx_24110
         = vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__6__Vfuncout;
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_addr 
         = (vlSelf->ysyx_24110005_NPC__DOT__imm + vlSelf->ysyx_24110005_NPC__DOT__src1);
-    vlSelf->ysyx_24110005_NPC__DOT__dnpc = ((0x6fU 
-                                             == (0x7fU 
-                                                 & vlSelf->ysyx_24110005_NPC__DOT__current_inst))
-                                             ? (vlSelf->ysyx_24110005_NPC__DOT__pc 
-                                                + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                             : ((0x63U 
-                                                 == 
-                                                 (0x7fU 
-                                                  & vlSelf->ysyx_24110005_NPC__DOT__current_inst))
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__csr_wen 
+        = ((0x73U == (0x7fU & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
+           & ((1U == (7U & (vlSelf->ysyx_24110005_NPC__DOT__current_inst 
+                            >> 0xcU))) | ((5U == (7U 
+                                                  & (vlSelf->ysyx_24110005_NPC__DOT__current_inst 
+                                                     >> 0xcU))) 
+                                          | (IData)(
+                                                    ((0U 
+                                                      == 
+                                                      (0x7000U 
+                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
+                                                     & (0U 
+                                                        == 
+                                                        (0xfffU 
+                                                         & vlSelf->ysyx_24110005_NPC__DOT__imm)))))));
+    if ((0x40U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+        if ((0x20U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+            if ((0x10U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                if ((8U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                    vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                        = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                    vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                } else if ((4U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                    vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                        = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                    vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                } else if ((2U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                    if ((1U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                        vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                            = ((IData)(((0U == (0x7000U 
+                                                & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
+                                        & (0U == (0xfffU 
+                                                  & vlSelf->ysyx_24110005_NPC__DOT__imm))))
+                                ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_tvec
+                                : ((IData)(((0U == 
+                                             (0x7000U 
+                                              & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) 
+                                            & (0x302U 
+                                               == (0xfffU 
+                                                   & vlSelf->ysyx_24110005_NPC__DOT__imm))))
+                                    ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_epc
+                                    : ((IData)(4U) 
+                                       + vlSelf->ysyx_24110005_NPC__DOT__pc)));
+                        vlSelf->ysyx_24110005_NPC__DOT__reg_wdata 
+                            = ((0x300U == (0xfffU & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_status
+                                : ((0x305U == (0xfffU 
+                                               & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                    ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_tvec
+                                    : ((0x341U == (0xfffU 
+                                                   & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                        ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_epc
+                                        : ((0x342U 
+                                            == (0xfffU 
+                                                & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                            ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_cause
+                                            : 0xffffffffU))));
+                    } else {
+                        vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                            = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                        vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                    }
+                } else {
+                    vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                        = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                    vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                }
+            } else if ((8U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                if ((4U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                    if ((2U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                        if ((1U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                            vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                                = (vlSelf->ysyx_24110005_NPC__DOT__pc 
+                                   + vlSelf->ysyx_24110005_NPC__DOT__imm);
+                            vlSelf->ysyx_24110005_NPC__DOT__reg_wdata 
+                                = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                        } else {
+                            vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                                = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                            vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                        }
+                    } else {
+                        vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                            = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                        vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                    }
+                } else {
+                    vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                        = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                    vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                }
+            } else if ((4U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                if ((2U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                    if ((1U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)) {
+                        vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                            = ((0U == (0x1fU & (vlSelf->ysyx_24110005_NPC__DOT__current_inst 
+                                                >> 7U)))
+                                ? vlSelf->ysyx_24110005_NPC__DOT__src1
+                                : (0xfffffffeU & (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                  + vlSelf->ysyx_24110005_NPC__DOT__imm)));
+                        vlSelf->ysyx_24110005_NPC__DOT__reg_wdata 
+                            = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                    } else {
+                        vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                            = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                        vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                    }
+                } else {
+                    vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                        = ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+                    vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+                }
+            } else {
+                vlSelf->ysyx_24110005_NPC__DOT__dnpc 
+                    = ((2U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                        ? ((1U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                            ? ((0x4000U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                ? ((0x2000U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                    ? ((0x1000U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                        ? ((vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                            >= vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                            ? (vlSelf->ysyx_24110005_NPC__DOT__pc 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                            : ((IData)(4U) 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__pc))
+                                        : ((vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                            < vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                            ? (vlSelf->ysyx_24110005_NPC__DOT__pc 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                            : ((IData)(4U) 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__pc)))
+                                    : ((0x1000U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                        ? (VL_GTES_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                            ? (vlSelf->ysyx_24110005_NPC__DOT__pc 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                            : ((IData)(4U) 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__pc))
+                                        : (VL_LTS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                            ? (vlSelf->ysyx_24110005_NPC__DOT__pc 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                            : ((IData)(4U) 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__pc))))
+                                : ((0x2000U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                    ? ((IData)(4U) 
+                                       + vlSelf->ysyx_24110005_NPC__DOT__pc)
+                                    : ((0x1000U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                        ? ((vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                            != vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                            ? (vlSelf->ysyx_24110005_NPC__DOT__pc 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                            : ((IData)(4U) 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__pc))
+                                        : ((vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                            == vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                            ? (vlSelf->ysyx_24110005_NPC__DOT__pc 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                            : ((IData)(4U) 
+                                               + vlSelf->ysyx_24110005_NPC__DOT__pc)))))
+                            : ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc))
+                        : ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc));
+                vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+            }
+        } else {
+            vlSelf->ysyx_24110005_NPC__DOT__dnpc = 
+                ((IData)(4U) + vlSelf->ysyx_24110005_NPC__DOT__pc);
+            vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 0xffffffffU;
+        }
+    } else {
+        vlSelf->ysyx_24110005_NPC__DOT__dnpc = ((IData)(4U) 
+                                                + vlSelf->ysyx_24110005_NPC__DOT__pc);
+        vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = 
+            ((0x20U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+              ? ((0x10U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                  ? ((8U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                      ? 0xffffffffU : ((4U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                        ? ((2U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                            ? ((1U 
+                                                & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                ? vlSelf->ysyx_24110005_NPC__DOT__imm
+                                                : 0xffffffffU)
+                                            : 0xffffffffU)
+                                        : ((2U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                            ? ((1U 
+                                                & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                ? (
+                                                   (0x4000U 
+                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                    ? 
+                                                   ((0x2000U 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                     ? 
+                                                    ((0x1000U 
+                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                      ? 
+                                                     ((0U 
+                                                       == 
+                                                       (0x7fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                       & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                       : 
+                                                      ((1U 
+                                                        == 
+                                                        (0x7fU 
+                                                         & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                        ? 
+                                                       VL_MODDIV_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                        : 0xffffffffU))
+                                                      : 
+                                                     ((0U 
+                                                       == 
+                                                       (0x7fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                       | vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                       : 
+                                                      ((1U 
+                                                        == 
+                                                        (0x7fU 
+                                                         & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                        ? 
+                                                       VL_MODDIVS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                        : 0xffffffffU)))
+                                                     : 
+                                                    ((0x1000U 
+                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                      ? 
+                                                     ((0U 
+                                                       == 
+                                                       (0x7fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                       >> 
+                                                       (0x1fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata))
+                                                       : 
+                                                      ((1U 
+                                                        == 
+                                                        (0x7fU 
+                                                         & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                        ? 
+                                                       VL_DIV_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                        : 
+                                                       ((0x20U 
+                                                         == 
+                                                         (0x7fU 
+                                                          & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                         ? 
+                                                        VL_SHIFTRS_III(32,32,5, vlSelf->ysyx_24110005_NPC__DOT__src1, 
+                                                                       (0x1fU 
+                                                                        & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata))
+                                                         : 0xffffffffU)))
+                                                      : 
+                                                     ((0U 
+                                                       == 
+                                                       (0x7fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                       ^ vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                       : 
+                                                      ((1U 
+                                                        == 
+                                                        (0x7fU 
+                                                         & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                        ? 
+                                                       VL_DIVS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                        : 0xffffffffU))))
+                                                    : 
+                                                   ((0x2000U 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                     ? 
+                                                    ((0x1000U 
+                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                      ? 
+                                                     ((0U 
+                                                       == 
+                                                       (0x7fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      ((vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                        < vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                        ? 1U
+                                                        : 0U)
+                                                       : 
+                                                      ((1U 
+                                                        == 
+                                                        (0x7fU 
+                                                         & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                        ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mul_unsigned
+                                                        : 0xffffffffU))
+                                                      : 
+                                                     (VL_LTS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                       ? 1U
+                                                       : 0U))
+                                                     : 
+                                                    ((0x1000U 
+                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                      ? 
+                                                     ((0U 
+                                                       == 
+                                                       (0x7fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                       << 
+                                                       (0x1fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata))
+                                                       : 
+                                                      ((1U 
+                                                        == 
+                                                        (0x7fU 
+                                                         & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                        ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mulh
+                                                        : 0xffffffffU))
+                                                      : 
+                                                     ((0U 
+                                                       == 
+                                                       (0x7fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                       + vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                       : 
+                                                      ((1U 
+                                                        == 
+                                                        (0x7fU 
+                                                         & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                        ? 
+                                                       VL_MULS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                        : 
+                                                       ((0x20U 
+                                                         == 
+                                                         (0x7fU 
+                                                          & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                         ? 
+                                                        (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                         - vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
+                                                         : 0xffffffffU))))))
+                                                : 0xffffffffU)
+                                            : 0xffffffffU)))
+                  : 0xffffffffU) : ((0x10U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                     ? ((8U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                         ? 0xffffffffU
+                                         : ((4U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                             ? ((2U 
+                                                 & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                  ? 
-                                                ((0x4000U 
+                                                ((1U 
                                                   & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                   ? 
-                                                 ((0x2000U 
-                                                   & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                   ? 
-                                                  ((0x1000U 
-                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                    ? 
-                                                   ((vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                     >= vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                     ? 
-                                                    (vlSelf->ysyx_24110005_NPC__DOT__pc 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                     : 
-                                                    ((IData)(4U) 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__pc))
-                                                    : 
-                                                   ((vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                     < vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                     ? 
-                                                    (vlSelf->ysyx_24110005_NPC__DOT__pc 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                     : 
-                                                    ((IData)(4U) 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__pc)))
-                                                   : 
-                                                  ((0x1000U 
-                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                    ? 
-                                                   (VL_GTES_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                     ? 
-                                                    (vlSelf->ysyx_24110005_NPC__DOT__pc 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                     : 
-                                                    ((IData)(4U) 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__pc))
-                                                    : 
-                                                   (VL_LTS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                     ? 
-                                                    (vlSelf->ysyx_24110005_NPC__DOT__pc 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                     : 
-                                                    ((IData)(4U) 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__pc))))
-                                                  : 
-                                                 ((0x2000U 
-                                                   & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                   ? 
-                                                  ((IData)(4U) 
-                                                   + vlSelf->ysyx_24110005_NPC__DOT__pc)
-                                                   : 
-                                                  ((0x1000U 
-                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                    ? 
-                                                   ((vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                     != vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                     ? 
-                                                    (vlSelf->ysyx_24110005_NPC__DOT__pc 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                     : 
-                                                    ((IData)(4U) 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__pc))
-                                                    : 
-                                                   ((vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                     == vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                     ? 
-                                                    (vlSelf->ysyx_24110005_NPC__DOT__pc 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                     : 
-                                                    ((IData)(4U) 
-                                                     + vlSelf->ysyx_24110005_NPC__DOT__pc)))))
-                                                 : 
-                                                ((0x67U 
-                                                  == 
-                                                  (0x7fU 
-                                                   & vlSelf->ysyx_24110005_NPC__DOT__current_inst))
-                                                  ? 
-                                                 ((0U 
-                                                   == 
-                                                   (0x1fU 
-                                                    & (vlSelf->ysyx_24110005_NPC__DOT__current_inst 
-                                                       >> 7U)))
-                                                   ? vlSelf->ysyx_24110005_NPC__DOT__src1
-                                                   : 
-                                                  (0xfffffffeU 
-                                                   & (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                      + vlSelf->ysyx_24110005_NPC__DOT__imm)))
-                                                  : 
-                                                 ((IData)(4U) 
-                                                  + vlSelf->ysyx_24110005_NPC__DOT__pc))));
-    vlSelf->ysyx_24110005_NPC__DOT__reg_wdata = ((0x40U 
+                                                 (vlSelf->ysyx_24110005_NPC__DOT__pc 
+                                                  + vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                                  : 0xffffffffU)
+                                                 : 0xffffffffU)
+                                             : ((2U 
+                                                 & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                 ? 
+                                                ((1U 
                                                   & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                   ? 
-                                                 ((0x20U 
+                                                 ((0x4000U 
                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                    ? 
-                                                  ((0x10U 
+                                                  ((0x2000U 
+                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                    ? 
+                                                   ((0x1000U 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                     ? 
+                                                    (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                                     : 
+                                                    (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                     | vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                    : 
+                                                   ((0x1000U 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                     ? 
+                                                    ((0x20U 
+                                                      == 
+                                                      (0x7fU 
+                                                       & (vlSelf->ysyx_24110005_NPC__DOT__imm 
+                                                          >> 5U)))
+                                                      ? 
+                                                     ((0x1fU 
+                                                       >= 
+                                                       (0x3fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      VL_SHIFTRS_III(32,32,6, vlSelf->ysyx_24110005_NPC__DOT__src1, 
+                                                                     (0x3fU 
+                                                                      & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       : 
+                                                      (- 
+                                                       (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                        >> 0x1fU)))
+                                                      : 
+                                                     ((0x1fU 
+                                                       >= 
+                                                       (0x3fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       ? 
+                                                      (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                       >> 
+                                                       (0x3fU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__imm))
+                                                       : 0U))
+                                                     : 
+                                                    (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                     ^ vlSelf->ysyx_24110005_NPC__DOT__imm)))
+                                                   : 
+                                                  ((0x2000U 
+                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                    ? 
+                                                   ((0x1000U 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                     ? 
+                                                    ((0U 
+                                                      == vlSelf->ysyx_24110005_NPC__DOT__src1)
+                                                      ? 1U
+                                                      : 0U)
+                                                     : 
+                                                    (VL_LTS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                                      ? 1U
+                                                      : 0U))
+                                                    : 
+                                                   ((0x1000U 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                     ? 
+                                                    ((0x1fU 
+                                                      >= vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                                      ? 
+                                                     (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                      << vlSelf->ysyx_24110005_NPC__DOT__imm)
+                                                      : 0U)
+                                                     : 
+                                                    (vlSelf->ysyx_24110005_NPC__DOT__src1 
+                                                     + vlSelf->ysyx_24110005_NPC__DOT__imm))))
+                                                  : 0xffffffffU)
+                                                 : 0xffffffffU)))
+                                     : ((8U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                         ? 0xffffffffU
+                                         : ((4U & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                             ? 0xffffffffU
+                                             : ((2U 
+                                                 & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                 ? 
+                                                ((1U 
+                                                  & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                  ? 
+                                                 ((0x4000U 
+                                                   & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
+                                                   ? 
+                                                  ((0x2000U 
                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                     ? 0xffffffffU
                                                     : 
-                                                   ((8U 
+                                                   ((0x1000U 
                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                      ? 
-                                                    ((4U 
-                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                      ? 
-                                                     ((2U 
-                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                       ? 
-                                                      ((1U 
-                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                        ? 
-                                                       ((IData)(4U) 
-                                                        + vlSelf->ysyx_24110005_NPC__DOT__pc)
-                                                        : 0xffffffffU)
-                                                       : 0xffffffffU)
-                                                      : 0xffffffffU)
+                                                    (0xffffU 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)
                                                      : 
-                                                    ((4U 
-                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                      ? 
-                                                     ((2U 
-                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                       ? 
-                                                      ((1U 
-                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                        ? 
-                                                       ((IData)(4U) 
-                                                        + vlSelf->ysyx_24110005_NPC__DOT__pc)
-                                                        : 0xffffffffU)
-                                                       : 0xffffffffU)
-                                                      : 0xffffffffU)))
-                                                   : 0xffffffffU)
-                                                  : 
-                                                 ((0x20U 
-                                                   & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                   ? 
-                                                  ((0x10U 
-                                                    & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                    ? 
-                                                   ((8U 
-                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                     ? 0xffffffffU
-                                                     : 
-                                                    ((4U 
-                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                      ? 
-                                                     ((2U 
-                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                       ? 
-                                                      ((1U 
-                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                        ? vlSelf->ysyx_24110005_NPC__DOT__imm
-                                                        : 0xffffffffU)
-                                                       : 0xffffffffU)
-                                                      : 
-                                                     ((2U 
-                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                       ? 
-                                                      ((1U 
-                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                        ? 
-                                                       ((0x4000U 
-                                                         & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                         ? 
-                                                        ((0x2000U 
-                                                          & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                          ? 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          ((0U 
-                                                            == 
-                                                            (0x7fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                            ? 
-                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                            & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                            : 
-                                                           ((1U 
-                                                             == 
-                                                             (0x7fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? 
-                                                            VL_MODDIV_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             : 0xffffffffU))
-                                                           : 
-                                                          ((0U 
-                                                            == 
-                                                            (0x7fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                            ? 
-                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                            | vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                            : 
-                                                           ((1U 
-                                                             == 
-                                                             (0x7fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? 
-                                                            VL_MODDIVS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             : 0xffffffffU)))
-                                                          : 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          ((0U 
-                                                            == 
-                                                            (0x7fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                            ? 
-                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                            >> 
-                                                            (0x1fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata))
-                                                            : 
-                                                           ((1U 
-                                                             == 
-                                                             (0x7fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? 
-                                                            VL_DIV_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             : 
-                                                            ((0x20U 
-                                                              == 
-                                                              (0x7fU 
-                                                               & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                              ? 
-                                                             VL_SHIFTRS_III(32,32,5, vlSelf->ysyx_24110005_NPC__DOT__src1, 
-                                                                            (0x1fU 
-                                                                             & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata))
-                                                              : 0xffffffffU)))
-                                                           : 
-                                                          ((0U 
-                                                            == 
-                                                            (0x7fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                            ? 
-                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                            ^ vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                            : 
-                                                           ((1U 
-                                                             == 
-                                                             (0x7fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? 
-                                                            VL_DIVS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             : 0xffffffffU))))
-                                                         : 
-                                                        ((0x2000U 
-                                                          & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                          ? 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          ((0U 
-                                                            == 
-                                                            (0x7fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                            ? 
-                                                           ((vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                             < vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             ? 1U
-                                                             : 0U)
-                                                            : 
-                                                           ((1U 
-                                                             == 
-                                                             (0x7fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mul_unsigned
-                                                             : 0xffffffffU))
-                                                           : 
-                                                          (VL_LTS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                            ? 1U
-                                                            : 0U))
-                                                          : 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          ((0U 
-                                                            == 
-                                                            (0x7fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                            ? 
-                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                            << 
-                                                            (0x1fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata))
-                                                            : 
-                                                           ((1U 
-                                                             == 
-                                                             (0x7fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mulh
-                                                             : 0xffffffffU))
-                                                           : 
-                                                          ((0U 
-                                                            == 
-                                                            (0x7fU 
-                                                             & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                            ? 
-                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                            + vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                            : 
-                                                           ((1U 
-                                                             == 
-                                                             (0x7fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? 
-                                                            VL_MULS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                             : 
-                                                            ((0x20U 
-                                                              == 
-                                                              (0x7fU 
-                                                               & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                              ? 
-                                                             (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                              - vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_wdata)
-                                                              : 0xffffffffU))))))
-                                                        : 0xffffffffU)
-                                                       : 0xffffffffU)))
-                                                    : 0xffffffffU)
+                                                    (0xffU 
+                                                     & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)))
                                                    : 
-                                                  ((0x10U 
+                                                  ((0x2000U 
                                                     & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                     ? 
-                                                   ((8U 
+                                                   ((0x1000U 
                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
                                                      ? 0xffffffffU
-                                                     : 
-                                                    ((4U 
-                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                      ? 
-                                                     ((2U 
-                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                       ? 
-                                                      ((1U 
-                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                        ? 
-                                                       (vlSelf->ysyx_24110005_NPC__DOT__pc 
-                                                        + vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                        : 0xffffffffU)
-                                                       : 0xffffffffU)
-                                                      : 
-                                                     ((2U 
-                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                       ? 
-                                                      ((1U 
-                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                        ? 
-                                                       ((0x4000U 
-                                                         & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                         ? 
-                                                        ((0x2000U 
-                                                          & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                          ? 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                           : 
-                                                          (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                           | vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                          : 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          ((0x20U 
-                                                            == 
-                                                            (0x7fU 
-                                                             & (vlSelf->ysyx_24110005_NPC__DOT__imm 
-                                                                >> 5U)))
-                                                            ? 
-                                                           ((0x1fU 
-                                                             >= 
-                                                             (0x3fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? 
-                                                            VL_SHIFTRS_III(32,32,6, vlSelf->ysyx_24110005_NPC__DOT__src1, 
-                                                                           (0x3fU 
-                                                                            & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             : 
-                                                            (- 
-                                                             (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                              >> 0x1fU)))
-                                                            : 
-                                                           ((0x1fU 
-                                                             >= 
-                                                             (0x3fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             ? 
-                                                            (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                             >> 
-                                                             (0x3fU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__imm))
-                                                             : 0U))
-                                                           : 
-                                                          (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                           ^ vlSelf->ysyx_24110005_NPC__DOT__imm)))
-                                                         : 
-                                                        ((0x2000U 
-                                                          & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                          ? 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          ((0U 
-                                                            == vlSelf->ysyx_24110005_NPC__DOT__src1)
-                                                            ? 1U
-                                                            : 0U)
-                                                           : 
-                                                          (VL_LTS_III(32, vlSelf->ysyx_24110005_NPC__DOT__src1, vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                            ? 1U
-                                                            : 0U))
-                                                          : 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          ((0x1fU 
-                                                            >= vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                            ? 
-                                                           (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                            << vlSelf->ysyx_24110005_NPC__DOT__imm)
-                                                            : 0U)
-                                                           : 
-                                                          (vlSelf->ysyx_24110005_NPC__DOT__src1 
-                                                           + vlSelf->ysyx_24110005_NPC__DOT__imm))))
-                                                        : 0xffffffffU)
-                                                       : 0xffffffffU)))
+                                                     : vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)
                                                     : 
-                                                   ((8U 
+                                                   ((0x1000U 
                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                     ? 0xffffffffU
+                                                     ? 
+                                                    (((- (IData)(
+                                                                 (1U 
+                                                                  & (vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata 
+                                                                     >> 0xfU)))) 
+                                                      << 0x10U) 
+                                                     | (0xffffU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata))
                                                      : 
-                                                    ((4U 
-                                                      & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                      ? 0xffffffffU
-                                                      : 
-                                                     ((2U 
-                                                       & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                       ? 
-                                                      ((1U 
-                                                        & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                        ? 
-                                                       ((0x4000U 
-                                                         & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                         ? 
-                                                        ((0x2000U 
-                                                          & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                          ? 0xffffffffU
-                                                          : 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          (0xffffU 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)
-                                                           : 
-                                                          (0xffU 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)))
-                                                         : 
-                                                        ((0x2000U 
-                                                          & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                          ? 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 0xffffffffU
-                                                           : vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)
-                                                          : 
-                                                         ((0x1000U 
-                                                           & vlSelf->ysyx_24110005_NPC__DOT__current_inst)
-                                                           ? 
-                                                          (((- (IData)(
-                                                                       (1U 
-                                                                        & (vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata 
-                                                                           >> 0xfU)))) 
-                                                            << 0x10U) 
-                                                           | (0xffffU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata))
-                                                           : 
-                                                          (((- (IData)(
-                                                                       (1U 
-                                                                        & (vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata 
-                                                                           >> 7U)))) 
-                                                            << 8U) 
-                                                           | (0xffU 
-                                                              & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)))))
-                                                        : 0xffffffffU)
-                                                       : 0xffffffffU))))));
+                                                    (((- (IData)(
+                                                                 (1U 
+                                                                  & (vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata 
+                                                                     >> 7U)))) 
+                                                      << 8U) 
+                                                     | (0xffU 
+                                                        & vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata)))))
+                                                  : 0xffffffffU)
+                                                 : 0xffffffffU)))));
+    }
 }
 
 VL_ATTR_COLD void Vysyx_24110005_NPC___024root___eval_stl(Vysyx_24110005_NPC___024root* vlSelf) {
@@ -1074,6 +1074,11 @@ VL_ATTR_COLD void Vysyx_24110005_NPC___024root___ctor_var_reset(Vysyx_24110005_N
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__unsigned_mulh__Vstatic__mul_result = VL_RAND_RESET_Q(64);
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mulh = VL_RAND_RESET_I(32);
     vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__mul_unsigned = VL_RAND_RESET_I(32);
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__csr_wen = VL_RAND_RESET_I(1);
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_status = VL_RAND_RESET_I(32);
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_cause = VL_RAND_RESET_I(32);
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_tvec = VL_RAND_RESET_I(32);
+    vlSelf->ysyx_24110005_NPC__DOT__alu_ins__DOT__m_epc = VL_RAND_RESET_I(32);
     vlSelf->__VdfgTmp_h6578c3af__0 = 0;
     vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__pmem_read__0__Vfuncout = 0;
     vlSelf->__Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__5__Vfuncout = VL_RAND_RESET_I(32);

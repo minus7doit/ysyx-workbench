@@ -16,6 +16,7 @@ class Vysyx_24110005_NPC___024root final : public VerilatedModule {
     VL_IN8(clk,0,0);
     VL_IN8(rst,0,0);
     CData/*0:0*/ ysyx_24110005_NPC__DOT__ins_Decoder__DOT__imm_mux__DOT__i0__DOT__hit;
+    CData/*0:0*/ ysyx_24110005_NPC__DOT__alu_ins__DOT__csr_wen;
     CData/*0:0*/ __Vtrigrprev__TOP__clk;
     CData/*0:0*/ __Vtrigrprev__TOP__rst;
     CData/*0:0*/ __VactDidInit;
@@ -37,6 +38,10 @@ class Vysyx_24110005_NPC___024root final : public VerilatedModule {
     IData/*31:0*/ ysyx_24110005_NPC__DOT__alu_ins__DOT__mem_rdata;
     IData/*31:0*/ ysyx_24110005_NPC__DOT__alu_ins__DOT__mulh;
     IData/*31:0*/ ysyx_24110005_NPC__DOT__alu_ins__DOT__mul_unsigned;
+    IData/*31:0*/ ysyx_24110005_NPC__DOT__alu_ins__DOT__m_status;
+    IData/*31:0*/ ysyx_24110005_NPC__DOT__alu_ins__DOT__m_cause;
+    IData/*31:0*/ ysyx_24110005_NPC__DOT__alu_ins__DOT__m_tvec;
+    IData/*31:0*/ ysyx_24110005_NPC__DOT__alu_ins__DOT__m_epc;
     IData/*31:0*/ __VdfgTmp_h6578c3af__0;
     IData/*31:0*/ __Vfunc_ysyx_24110005_NPC__DOT__pmem_read__0__Vfuncout;
     IData/*31:0*/ __Vfunc_ysyx_24110005_NPC__DOT__alu_ins__DOT__signed_mulh__5__Vfuncout;

@@ -90,7 +90,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
 
   #if DIFF_ENABLE
-  printf("program is writing data 0x%08x to nemu memory: 0x%x \n", data, addr);
+  //printf("program is writing data 0x%08x to nemu memory: 0x%x \n", data, addr);
   if (addr>=CONFIG_SERIAL_MMIO&&addr<CONFIG_SERIAL_MMIO+8) return;
   if (addr>=CONFIG_FB_ADDR&&addr<CONFIG_FB_ADDR+VMEM_SIZE) return ;
   if (addr>=CONFIG_VGA_CTL_MMIO&&addr<CONFIG_VGA_CTL_MMIO+8) return ;
