@@ -31,8 +31,8 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
   uintptr_t sp = (uintptr_t)kstack.end;
   sp &= ~(uintptr_t)0xF;
-  //Context *cp = (Context *)(sp - sizeof(Context));
-  Context *cp = (Context *)sp - 1;
+  Context *cp = (Context *)(sp - sizeof(Context));
+  //Context *cp = (Context *)sp - 1;
 
   cp->mstatus = 0x1800; //set mpp to machine mode
   cp->mepc = (uintptr_t)(entry); //pc
