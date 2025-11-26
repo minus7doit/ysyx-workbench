@@ -5,12 +5,12 @@ module ysyx_24110005_Decoder #(
    parameter FUN_WIDTH=3
 ) (    
     input  [DATA_WIDTH-1:0]inst, 
-    output [REG_ADDR_WIDTH-1:0]ra1,
-    output [REG_ADDR_WIDTH-1:0]ra2,
+    output [REG_ADDR_WIDTH-1:0]reg_r_addr1,
+    output [REG_ADDR_WIDTH-1:0]reg_r_addr2,
+    output [REG_ADDR_WIDTH-1:0]reg_w_addr,
     output [DATA_WIDTH-1:0]imm,
     output [FUN_WIDTH-1:0]fun,
-    output [OP_WIDTH-1:0]opcode,
-    output [REG_ADDR_WIDTH-1:0] w_addr
+    output [OP_WIDTH-1:0]opcode
 );
     parameter TYPE_NUM=9;
     parameter TYPE_WIDTH=7;
@@ -27,10 +27,9 @@ module ysyx_24110005_Decoder #(
     
     assign opcode=inst[OP_WIDTH-1:0];
     assign fun=inst[14:12];//选择同一类型指令的其中一条指令
-    assign ra1=inst[19:15];//寄存器地址1
-    assign ra2=inst[24:20];//寄存器地址2
-
-    assign w_addr= inst[11:7];//目标寄存器地址
+    assign reg_r_addr1=inst[19:15];//寄存器地址1
+    assign reg_r_addr2=inst[24:20];//寄存器地址2
+    assign reg_w_addr= inst[11:7];//目标寄存器地址
     //专门用来写寄存器的；和S型指令直接写进地址还不太一样
 //根据指令类型取出立即数
 ysyx_24110005_MuxKeyWithDefault #(
@@ -52,9 +51,6 @@ imm_mux (
     TYPE_R,{25'b0,inst[31:25]}
     })
 );
-//在这里对寄存器进行读？
-
-
 endmodule
 
 

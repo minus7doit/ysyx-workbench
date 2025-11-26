@@ -14,7 +14,7 @@ READLINE_LDFLAGS := -lreadline -ldl -lhistory     # history 可能已被 readlin
 SDL_CFLAGS  := $(shell sdl2-config --cflags 2>/dev/null || pkg-config --cflags sdl2)
 SDL_LDFLAGS := $(shell sdl2-config --libs   2>/dev/null || pkg-config --libs   sdl2)
 
-ENABLE_DIFF ?= 0
+ENABLE_DIFF ?= 1
 
 ifeq ($(ENABLE_DIFF),1)
 include difftest.mk

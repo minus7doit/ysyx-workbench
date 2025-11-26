@@ -8,6 +8,7 @@
 #define MAX_PRINT_NUM 1024
 
 int vsprintf(char *out, const char *fmt, va_list ap) {
+  char * start = out;
   char *s;
   int c;
   unsigned int x;
@@ -128,7 +129,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
     }
   }
   *out='\0';
-return ptr-fmt;
+return out-start;
 }
 
 int printf(const char *fmt, ...) {

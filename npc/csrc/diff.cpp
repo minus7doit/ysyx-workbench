@@ -35,7 +35,7 @@ CPU_state npc_state = {}; // 初始化 NPC 状态
 
 void isa_reg_display(){
   for(int i = 0; i < 32; i++){
-    printf("gpr[%2d] : 0x%08x\n",i,dut->rootp->ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[i]);
+    printf("gpr[%2d] : 0x%08x\n",i,dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i]);
   }
   printf("pc : 0x%08x\n",dut->rootp->ysyx_24110005_NPC__DOT__pc);
 }
@@ -43,7 +43,7 @@ void isa_reg_display(){
 
 void npc_state_init() {
   for(int i = 0; i < 32; i++) { 
-    npc_state.gpr[i] = dut->rootp->ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[i];
+    npc_state.gpr[i] = dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i];
   }
   npc_state.pc = RESET_VECTOR ;
   printf("npc_state_update: npc_state.pc = %08x\n", npc_state.pc);
@@ -56,8 +56,8 @@ bool isa_difftest_checkregs(CPU_state *ref, uint32_t pc) {
     return false;
   }
   for(int i = 0; i < 32;i++){
-   if(ref->gpr[i] != dut->rootp->ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[i]){
-      printf("gpr mismatch: ref(nemu) gpr[%d] =  %08x ,npc gpr[%d] = %08x" , i, ref->gpr[i], i, dut->rootp->ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[i]);
+   if(ref->gpr[i] != dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i]){
+      printf("gpr mismatch: ref(nemu) gpr[%d] =  %08x ,npc gpr[%d] = %08x" , i, ref->gpr[i], i, dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i]);
       return false;
     }
   }
@@ -124,4 +124,5 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
   checkregs(&ref_r, pc);
   ref_difftest_exec(1);
+
 }

@@ -18,7 +18,7 @@
 
 //#define MTRACE 0
 #define WAVE 0
-#define CONFIG_DEVICE 1
+#define CONFIG_DEVICE 0
 
 extern Vysyx_24110005_NPC *dut; 
 extern VerilatedVcdC *m_trace;

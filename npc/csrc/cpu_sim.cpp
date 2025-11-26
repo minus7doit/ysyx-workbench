@@ -20,7 +20,9 @@ void cpu_sim(int n) {
             #if WAVE
             m_trace->dump(sim_time);
             #endif
+
             sim_time++;
+            
             #if WAVE
             m_trace->flush();
              #endif
@@ -28,6 +30,7 @@ void cpu_sim(int n) {
             if(sim_break) {
             if(!dut->exit_code){
                 printf("\033[32mNPC hit a good trap. Ending simulation.\033[32m");
+                printf("npc cycle = %ld\n", sim_time/2);
             } 
             else {
                 printf("\033[31mNPC hit a bad trap. Ending simulation");
@@ -60,6 +63,8 @@ void cpu_sim(int n) {
             if(sim_break) {
                 if(!dut->exit_code){
                    printf("\033[32mNPC hit a good trap. Ending simulation.\033[32m");
+                   printf("npc cycle = %ld\n", sim_time/2);  
+
                 } 
                 else {
                      printf("\033[31mNPC hit a bad trap. Ending simulation.\033[31m");

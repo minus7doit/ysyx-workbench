@@ -88,7 +88,7 @@ static int cmd_info(char *args) {
     //char *arg =strtok()
     if(strcmp("r",args) == 0) {
       for (int i = 0; i < 32; i++) {
-          printf("ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[%d]: 0x%08x\n", i, dut->rootp->ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[i]);
+          printf("ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[%d]: 0x%08x\n", i, dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i]);
       }
     }
 
