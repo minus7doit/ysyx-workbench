@@ -5,7 +5,10 @@ module ysyx_24110005_Alu #(
     parameter REG_ADDR_WIDTH=5,
     parameter FUN_WIDTH=3
 ) (
-input clk,
+input  clk,
+input  rst,
+input  dec_exc_valid,
+output dec_exc_ready,
 input [REG_ADDR_WIDTH-1:0]w_addr,
 input [DATA_WIDTH-1:0] pc,
 input [DATA_WIDTH-1:0] src1,
@@ -16,19 +19,18 @@ input [FUN_WIDTH-1:0]  fun,
 output[DATA_WIDTH-1:0] dnpc,
 output[DATA_WIDTH-1:0] w_data,
 output wen,
-output  [DATA_WIDTH-1:0]mem_addr  ,
-output  [7:0]wmask,
-output  mem_wen,
-output  mem_ren  ,
-output  [DATA_WIDTH-1:0]mem_wdata ,
-input   [DATA_WIDTH-1:0]mem_rdata ,
+input [DATA_WIDTH-1:0]mem_rdata ,
+output mem_w_valid,
+input  mem_w_ready,
+input  mem_bresp,
+output exc_wb_valid,
+input  exc_wb_ready,
 output w_finish_sim
 );
 
-wire [DATA_WIDTH-1:0]src1_comp;
-wire [DATA_WIDTH-1:0]src2_comp;
-wire [DATA_WIDTH-1:0]imm_comp;
+
 wire [DATA_WIDTH-1:0]snpc;
+//wire wen;
 
 parameter TYPE_I0 =7'b0000011;
 parameter TYPE_I1 =7'b0010011;
@@ -53,6 +55,10 @@ parameter CSR_ECALL   = 12'h0;
 parameter CSR_MRET    = 12'h302;
 parameter YIELD       = 11;
 
+parameter STATE_EX=2'b01;
+parameter STATE_OUTPUT_WB=2'b10;
+parameter STATE_STORE=2'b11;
+
 function [DATA_WIDTH-1:0] signed_mulh ;
     input [DATA_WIDTH-1:0]a;
     input [DATA_WIDTH-1:0]b;
@@ -73,8 +79,42 @@ function [DATA_WIDTH-1:0] unsigned_mulh ;
     end
 endfunction
 
+reg [1:0] ex_state;
+
+always @(posedge clk or posedge rst) begin
+    if(rst)begin
+        ex_state<=STATE_EX;
+    end
+    else begin
+        case (ex_state)
+            STATE_EX:begin
+            if(dec_exc_ready&&dec_exc_valid)begin
+                if (opcode==TYPE_S) begin
+                    ex_state<=STATE_STORE;
+                end else begin
+                    ex_state<=STATE_OUTPUT_WB;
+                end
+            end
+            end
+            STATE_OUTPUT_WB:begin
+            if(exc_wb_ready&&exc_wb_valid)
+                ex_state<=STATE_EX;
+            end
+            STATE_STORE:begin
+            //if(mem_w_valid&&mem_w_ready)
+            if(mem_bresp)
+                ex_state<=STATE_EX;
+            end
+            default: ex_state<=STATE_EX;
+        endcase
+    end
+end
+
+assign exc_wb_valid=(ex_state==STATE_OUTPUT_WB);
+assign dec_exc_ready=(ex_state==STATE_EX);
+
 reg [DATA_WIDTH-1:0] dnpc_reg;
-always@(*)begin
+always@(posedge clk)begin
     case(opcode)
     TYPE_J: begin
         dnpc_reg=pc+imm;   //j or jal 无条件跳转
@@ -131,7 +171,7 @@ wire [DATA_WIDTH-1:0]mulh;
 wire [DATA_WIDTH-1:0]mul_unsigned;
 reg  [DATA_WIDTH-1:0] w_data_reg;
 //下面这段要专门为寄存器读写使用
-always@(*)begin
+always@(posedge clk)begin
     case(opcode) 
     TYPE_I0:begin
         case(fun)
@@ -356,17 +396,12 @@ always @(posedge clk) begin
 end
 
 
-    assign csr_wen=(opcode==TYPE_CSR)&&((fun==3'b001)|(fun==3'b101)|((fun==3'b000)&&(imm[11:0]==CSR_ECALL))) ;
+    assign csr_wen=(ex_state==STATE_OUTPUT_WB)&&(opcode==TYPE_CSR)&&((fun==3'b001)|(fun==3'b101)|((fun==3'b000)&&(imm[11:0]==CSR_ECALL))) ;
 
     assign mulh=signed_mulh(src1,src2);
     assign mul_unsigned=unsigned_mulh(src1,src2);
 
-    assign mem_addr  = src1+imm;
-    assign mem_wdata = src2;
-    assign mem_wen = (opcode == TYPE_S);
-    assign mem_ren = (opcode ==TYPE_I0);
-
-    assign wmask=fun[0]?8'b11:(fun[1]?8'b1111:8'b1);
+    assign mem_w_valid=(ex_state==STATE_STORE);
 
     assign w_finish_sim = (opcode == 7'b1110011)&&(imm==1)&&(fun==3'b000);
     assign snpc=pc+4; //默认情况下，下一条指令地址为当前指令地址+4

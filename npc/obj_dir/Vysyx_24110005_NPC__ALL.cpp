@@ -5,6 +5,7 @@
 #include "Vysyx_24110005_NPC___024root__DepSet_h39f1fb13__0.cpp"
 #include "Vysyx_24110005_NPC__Dpi.cpp"
 #include "Vysyx_24110005_NPC__Trace__0.cpp"
+#include "Vysyx_24110005_NPC__ConstPool_0.cpp"
 #include "Vysyx_24110005_NPC___024root__Slow.cpp"
 #include "Vysyx_24110005_NPC___024root__DepSet_hf25f17a0__0__Slow.cpp"
 #include "Vysyx_24110005_NPC___024root__DepSet_h39f1fb13__0__Slow.cpp"

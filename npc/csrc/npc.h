@@ -17,7 +17,7 @@
 #define RESET_VECTOR (PMEM_BASE + CONFIG_PC_RESET_OFFSET)
 
 //#define MTRACE 0
-#define WAVE 0
+#define WAVE 1
 #define CONFIG_DEVICE 0
 
 extern Vysyx_24110005_NPC *dut; 

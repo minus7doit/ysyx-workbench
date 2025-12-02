@@ -4,7 +4,7 @@
 #define PMEM_RIGHT ((vaddr_t)PMEM_BASE + MEM_SIZE - 1)
 
 int32_t inst_mem[MEM_SIZE/4];//模拟指令存储器,每个周期只读出一条指令
-#define DIFF_ENABLE 1
+#define DIFF_ENABLE 0
 #if DIFF_ENABLE
 #define ZERO_OR_ONE 0
 #else
@@ -14,7 +14,6 @@ int32_t inst_mem[MEM_SIZE/4];//模拟指令存储器,每个周期只读出一条
 vaddr_t* guest_to_host(vaddr_t paddr) {
     assert(paddr >= PMEM_BASE && paddr < PMEM_BASE + MEM_SIZE);
     return (vaddr_t *)inst_mem + (paddr - PMEM_BASE)/4; //将物理地址转换为指针
-
 }
 
 
