@@ -2,8 +2,8 @@ module inst_rom#(
     parameter DATA_WIDTH=32,
     parameter ADDR_WIDTH=32
 )(
-    input  clk,
-    input  rst,
+    input  clock,
+    input  reset,
     input  [ADDR_WIDTH-1:0] inst_ar_addr,
     output  if_ar_ready, 
     input   if_ar_valid,
@@ -27,8 +27,8 @@ parameter STATE_IF=2'b01;
 parameter STATE_OUTPUT=2'b10;
 //wire if_r_valid;
 reg [1:0] if_state;
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
         if_state<=STATE_IF;
     end
     else begin
@@ -50,8 +50,8 @@ reg [DATA_WIDTH-1:0] fetch_dec_inst;
 wire inst;
 
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
         fetch_dec_inst<=32'b0;
     end
     else begin
@@ -74,13 +74,13 @@ reg  [7:0]latency_cnt;
 ysyx_24110005_LFSR #(
 .DATA_WIDTH(8)
 )rand_gen(
-.clk(clk),
-.rst(rst),
+.clock(clock),
+.reset(reset),
 .o_data(latency)
 );
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
         r_latency<=8'b0;
     end
     if(if_ar_valid&&if_ar_ready)
@@ -89,8 +89,8 @@ always @(posedge clk or posedge rst) begin
         r_latency <=r_latency;
 end
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
         latency_cnt<=8'b0;
     end
     else begin
@@ -108,8 +108,8 @@ ysyx_24110005_delay #(
 .LATENCY(10),
 .DATA_WIDTH(1)
 )inst_valid_delay(
-.clk(clk),
-.rst(rst),
+.clock(clock),
+.reset(reset),
 .i_data(if_r_valid),
 .o_data_delayed(inst_delayed_valid)
 );
@@ -120,8 +120,8 @@ ysyx_24110005_delay #(
 .LATENCY(10),
 .DATA_WIDTH(32)
 )inst_delay(
-.clk(clk),
-.rst(rst),
+.clock(clock),
+.reset(reset),
 .i_data(fetch_dec_inst),
 .o_data_delayed(inst_delayed)
 );

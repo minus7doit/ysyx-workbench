@@ -1,13 +1,15 @@
 #include <am.h>
 #include <riscv/riscv.h>
 #include <klib.h>
+#include <stdio.h>
 static Context* (*user_handler)(Event, Context*) = NULL;
 
 Context* __am_irq_handle(Context *c) {
   if (user_handler) {
     Event ev = {0};
     switch (c->mcause) {
-      case YIELD_TRAP: ev.event =EVENT_YIELD ; break;
+      case YIELD_TRAP: ev.event =EVENT_YIELD ; 
+      c->mepc += 4; break;
       default: ev.event = EVENT_ERROR; break;
     }
 
@@ -35,8 +37,9 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
 
   cp->mstatus = 0x1800; //set mpp to machine mode
   cp->mepc = (uintptr_t)(entry); //pc
+ // printf("kcontext entry at %x\n", entry);
   cp->gpr[10] = (uintptr_t)(arg); //a0
-
+  
   return cp ;
 }
 

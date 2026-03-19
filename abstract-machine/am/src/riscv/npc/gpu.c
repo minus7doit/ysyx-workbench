@@ -1,6 +1,6 @@
 #include <am.h>
 #include <npc.h>
-#include <stdio.h>
+//#include <stdio.h>
 #define SYNC_ADDR (VGACTL_ADDR + 4)
 
 static struct gpu_canvas display;

@@ -5,8 +5,8 @@ module ysyx_24110005_Alu #(
     parameter REG_ADDR_WIDTH=5,
     parameter FUN_WIDTH=3
 ) (
-input  clk,
-input  rst,
+input  clock,
+input  reset,
 input  dec_exc_valid,
 output dec_exc_ready,
 input [REG_ADDR_WIDTH-1:0]w_addr,
@@ -16,21 +16,34 @@ input [DATA_WIDTH-1:0] src2,
 input [DATA_WIDTH-1:0] imm ,
 input [OP_WIDTH-1:0]   opcode,
 input [FUN_WIDTH-1:0]  fun,
+
+
 output[DATA_WIDTH-1:0] dnpc,
 output[DATA_WIDTH-1:0] w_data,
 output wen,
+input  lsu_ex_r_valid,
 input [DATA_WIDTH-1:0]mem_rdata ,
-output mem_w_valid,
-input  mem_w_ready,
-input  mem_bresp,
+output lsu_ex_w_valid,
+input  lsu_ex_w_ready,
+input  bresp,
 output exc_wb_valid,
 input  exc_wb_ready,
 output w_finish_sim
 );
 
+reg [REG_ADDR_WIDTH-1:0] w_addr_ex;
+reg [DATA_WIDTH-1:0] pc_ex;
+
+reg [DATA_WIDTH-1:0] src1_ex;
+reg [DATA_WIDTH-1:0] src2_ex;
+reg [OP_WIDTH-1:0]   opcode_ex;
+reg [FUN_WIDTH-1:0]  fun_ex;
+reg [DATA_WIDTH-1:0] imm_ex;
 
 wire [DATA_WIDTH-1:0]snpc;
 //wire wen;
+parameter  MVENDORID=32'h79737978 ;
+parameter  MARCHID=32'h016FE3B5 ;
 
 parameter TYPE_I0 =7'b0000011;
 parameter TYPE_I1 =7'b0010011;
@@ -43,9 +56,6 @@ parameter TYPE_U0 =7'b0110111;
 parameter TYPE_U1 =7'b0010111;
 parameter TYPE_R  =7'b0110011;
 
-
-parameter BASE_ADDR=32'h80000000;
-parameter ALL_1 =32'b1;
  
 parameter CSR_MSTATUS = 12'h300;
 parameter CSR_MTVEC   = 12'h305;
@@ -53,11 +63,16 @@ parameter CSR_MEPC    = 12'h341;
 parameter CSR_MCAUSE  = 12'h342;
 parameter CSR_ECALL   = 12'h0;
 parameter CSR_MRET    = 12'h302;
+parameter CSR_MVENDORID =12'hf11;
+parameter CSR_MARCHID   =12'hf12;
 parameter YIELD       = 11;
 
-parameter STATE_EX=2'b01;
-parameter STATE_OUTPUT_WB=2'b10;
-parameter STATE_STORE=2'b11;
+parameter STATE_REC=3'b000;
+parameter STATE_EX=3'b001;
+parameter STATE_MDU=3'b010;
+parameter STATE_OUTPUT_WB=3'b011;
+parameter STATE_STORE=3'b100;
+parameter STATE_LOAD=3'b101;
 
 function [DATA_WIDTH-1:0] signed_mulh ;
     input [DATA_WIDTH-1:0]a;
@@ -79,88 +94,133 @@ function [DATA_WIDTH-1:0] unsigned_mulh ;
     end
 endfunction
 
-reg [1:0] ex_state;
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
-        ex_state<=STATE_EX;
+reg [2:0] ex_state;
+
+wire mdu_ready;
+wire mdu_valid;
+
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
+        ex_state<=STATE_REC;
     end
     else begin
         case (ex_state)
-            STATE_EX:begin
+            STATE_REC:begin
             if(dec_exc_ready&&dec_exc_valid)begin
-                if (opcode==TYPE_S) begin
-                    ex_state<=STATE_STORE;
-                end else begin
+                if(lsu_ex_r_valid)
+                    ex_state<=STATE_LOAD;
+                else
+                    ex_state<=STATE_EX;
+            end
+            end
+            STATE_EX: begin
+            if (opcode_ex == TYPE_S)
+                ex_state <= STATE_STORE;
+            else if (is_div_op)
+                ex_state <= STATE_MDU;
+            else if (opcode_ex == TYPE_I0)  
+                if (lsu_ex_r_valid) begin
+                    ex_state <= STATE_LOAD;
+                end
+                else begin
+                    ex_state <= STATE_EX;
+                end
+            else
+                ex_state <= STATE_OUTPUT_WB;
+            end
+
+            STATE_LOAD: begin
+                    ex_state <= STATE_OUTPUT_WB;
+            end
+            STATE_MDU:begin
+                if(mdu_valid&&mdu_ready)begin
                     ex_state<=STATE_OUTPUT_WB;
                 end
             end
-            end
             STATE_OUTPUT_WB:begin
             if(exc_wb_ready&&exc_wb_valid)
-                ex_state<=STATE_EX;
+                ex_state<=STATE_REC;
             end
             STATE_STORE:begin
-            //if(mem_w_valid&&mem_w_ready)
-            if(mem_bresp)
-                ex_state<=STATE_EX;
+            if(lsu_ex_w_valid&&lsu_ex_w_ready)
+            //if(bresp)
+                ex_state<=STATE_REC;
             end
-            default: ex_state<=STATE_EX;
+            default: ex_state<=STATE_REC;
         endcase
     end
 end
 
+
+
 assign exc_wb_valid=(ex_state==STATE_OUTPUT_WB);
-assign dec_exc_ready=(ex_state==STATE_EX);
+assign dec_exc_ready=(ex_state==STATE_REC);
+
+
+
+
+always @(posedge clock) begin
+    if(dec_exc_ready&&dec_exc_valid)begin
+        src1_ex<=src1;
+        src2_ex<=src2;
+        imm_ex<=imm;
+        opcode_ex<=opcode;
+        fun_ex<=fun;
+        w_addr_ex<=w_addr;
+        pc_ex<=pc;
+    end
+end
+
 
 reg [DATA_WIDTH-1:0] dnpc_reg;
-always@(posedge clk)begin
-    case(opcode)
+always@(posedge clock)begin
+    case(opcode_ex)
     TYPE_J: begin
-        dnpc_reg=pc+imm;   //j or jal 无条件跳转
+        dnpc_reg<=pc_ex+imm_ex;   //j or jal 无条件跳转
     end
     TYPE_B:begin
-        case(fun)
+        case(fun_ex)
             3'b000:begin //beq or beqz
-                 dnpc_reg=(src1 == src2)?(pc+imm):snpc;
+                 dnpc_reg<=(src1_ex == src2_ex)?(pc_ex+imm_ex):snpc;
             end
             3'b001:begin//bne or bnez
-                 dnpc_reg=(src1 != src2)?(pc+imm):snpc;
+                 dnpc_reg<=(src1_ex != src2_ex)?(pc_ex+imm_ex):snpc;
             end
             3'b100:begin//blt
-                 dnpc_reg=($signed(src1) < $signed(src2))?(pc+imm):snpc;
+                 dnpc_reg<=($signed(src1_ex) < $signed(src2_ex))?(pc_ex+imm_ex):snpc;
             end
             3'b101:begin//bge 
-                 dnpc_reg=($signed(src1) >= $signed(src2))?(pc+imm):snpc;
+                 dnpc_reg<=($signed(src1_ex) >= $signed(src2_ex))?(pc_ex+imm_ex):snpc;
             end
             3'b110:begin//bltu
-                 dnpc_reg=(src1 < src2)?(pc+imm):snpc;
+                 dnpc_reg<=(src1_ex < src2_ex)?(pc_ex+imm_ex):snpc;
             end
             3'b111:begin
-                 dnpc_reg=(src1>=src2)?(pc+imm):snpc;//bgeu
+                 dnpc_reg<=(src1_ex>=src2_ex)?(pc_ex+imm_ex):snpc;//bgeu
             end
-            default:dnpc_reg=snpc;
+            default:dnpc_reg<=snpc;
         endcase 
     end
     TYPE_I2 :begin
-        if(w_addr == 5'b0) begin
-            dnpc_reg=src1;
+        if(w_addr_ex == 5'b0) begin
+            dnpc_reg<=src1_ex;
         end
         else begin
-            dnpc_reg=(src1+imm)&(~32'b1);//jalr指令的下一条指令地址
+            dnpc_reg<=(src1_ex+imm_ex)&(~32'b1);//jalr指令的下一条指令地址
         end
     end
     TYPE_CSR :begin
-        if((fun==3'b0) && (imm[11:0] == CSR_ECALL))begin
-            dnpc_reg=m_tvec;
+        if((fun_ex==3'b0) && (imm_ex[11:0] == CSR_ECALL))begin
+            dnpc_reg<=m_tvec;
         end
-        else if((fun==3'b0) && (imm[11:0] == CSR_MRET))begin
-            dnpc_reg=m_epc;
+        else if((fun_ex==3'b0) && (imm_ex[11:0] == CSR_MRET))begin
+            dnpc_reg<=m_epc;
         end
-        else dnpc_reg=snpc;
+        else dnpc_reg<=snpc;
     end
     default: begin
-        dnpc_reg=snpc; //默认情况下，下一条指令地址为当前指令地址+4
+        dnpc_reg<=snpc; //默认情况下，下一条指令地址为当前指令地址+4
     end
     endcase
 end
@@ -169,177 +229,220 @@ assign dnpc=dnpc_reg;
 
 wire [DATA_WIDTH-1:0]mulh;
 wire [DATA_WIDTH-1:0]mul_unsigned;
+
+wire is_div;
+wire is_divu;  
+wire is_rem;
+wire is_remu;
+wire [1:0]mdu_op;
+wire is_div_op ;
+wire [DATA_WIDTH-1:0] o_result;
+
+
+assign mdu_ready=(ex_state==STATE_MDU);
+assign is_div   = (opcode==TYPE_R) && (fun==3'b100) && (imm[6:0]==7'b0000001);
+assign is_divu  = (opcode==TYPE_R) && (fun==3'b101) && (imm[6:0]==7'b0000001);
+assign is_rem   = (opcode==TYPE_R) && (fun==3'b110) && (imm[6:0]==7'b0000001);
+assign is_remu  = (opcode==TYPE_R) && (fun==3'b111) && (imm[6:0]==7'b0000001);
+
+assign is_div_op = is_div | is_divu | is_rem | is_remu;
+assign mdu_op =  is_div   ? 2'b00 :
+                 is_divu  ? 2'b01 :
+                 is_rem   ? 2'b10 :
+                 is_remu  ? 2'b11 : 2'b00 ;
+
+ysyx_24110005_MDU #(
+    .DATA_WIDTH (DATA_WIDTH)
+) MDU_inst (
+    .clock          (clock),
+    .reset          (reset),
+    .i_devidend   (src1_ex),
+    .i_devisor    (src2_ex),
+    .i_mdu_op     (mdu_op),
+    .o_result     (o_result),
+    .i_mdu_ready  (mdu_ready),
+    .o_mdu_valid  (mdu_valid)
+);
 reg  [DATA_WIDTH-1:0] w_data_reg;
-//下面这段要专门为寄存器读写使用
-always@(posedge clk)begin
-    case(opcode) 
+always@(posedge clock)begin
+    if(is_div_op)begin
+        if(mdu_valid&&mdu_ready)begin
+            w_data_reg<=o_result; //div的结果写回   
+        end
+    end
+    else begin
+    case(opcode_ex) 
     TYPE_I0:begin
-        case(fun)
+        case(fun_ex)
             3'b000:begin//lb
-               w_data_reg={{24{mem_rdata[7]}},mem_rdata[7:0]};
+               w_data_reg<={{24{mem_rdata[7]}},mem_rdata[7:0]};
             end
             3'b001:begin//lh
-                w_data_reg={{16{mem_rdata[15]}},mem_rdata[15:0]};
+                w_data_reg<={{16{mem_rdata[15]}},mem_rdata[15:0]};
             end
             3'b010:begin//lw
-                w_data_reg=mem_rdata;
+                w_data_reg<=mem_rdata;
             end
             3'b100:begin//lbu
-                w_data_reg={24'b0,mem_rdata[7:0]};
+                w_data_reg<={24'b0,mem_rdata[7:0]};
             end
             3'b101:begin//lhu
-                w_data_reg={16'b0,mem_rdata[15:0]};
+                w_data_reg<={16'b0,mem_rdata[15:0]};
             end
-            default:w_data_reg=32'hffffffff;  
+            default:w_data_reg<=32'hffffffff;  
         endcase
     end
     TYPE_I1:begin
-        case(fun)
+        case(fun_ex)
             3'b000:begin 
-                w_data_reg=src1+imm;////addi,地址不能看成负数处理
+                w_data_reg<=src1_ex+imm_ex;////addi,地址不能看成负数处理
             end
             3'b001:begin
-                w_data_reg=src1<<imm;//slli
+                w_data_reg<=src1_ex<<imm_ex;//slli
             end
             3'b011:begin
-                w_data_reg=(src1 == 0)?32'b1:32'b0;//seqz
+                w_data_reg<=(src1_ex == 0)?32'b1:32'b0;//seqz
             end
             3'b100:begin
-                w_data_reg=src1^imm;//xori
+                w_data_reg<=src1_ex^imm_ex;//xori
             end
             3'b101:begin
-            if(imm[11:5]== 7'b0100000)begin
-                w_data_reg=$signed(src1)>>>imm[5:0];//srai
+            if(imm_ex[11:5]== 7'b0100000)begin
+                w_data_reg<=$signed(src1_ex)>>>imm_ex[5:0];//srai
                 end
             else begin
-                w_data_reg=src1>>imm[5:0];//srli
+                w_data_reg<=src1_ex>>imm_ex[5:0];//srli
                 end
             end
             3'b010:begin
-                w_data_reg=($signed(src1)<$signed(imm))?32'b1:32'b0;//slti
+                w_data_reg<=($signed(src1_ex)<$signed(imm_ex))?32'b1:32'b0;//slti
             end
             3'b110:begin//ori
-                w_data_reg=src1|imm;
+                w_data_reg<=src1_ex|imm_ex;
             end
             3'b111:begin
-                w_data_reg=src1&imm;////andi,地址不能看成负数处理
+                w_data_reg<=src1_ex&imm_ex;////andi,地址不能看成负数处理
             end
-            default:w_data_reg=32'hffffffff;  
+            default:w_data_reg<=32'hffffffff;  
         endcase 
     end     
     TYPE_I2:begin  
-            w_data_reg=pc+4;//jalr
+            w_data_reg<=pc_ex+4;//jalr
     end 
     TYPE_CSR:begin
-            w_data_reg=csr_data;//csrr,csrrw,csrrwi
+            w_data_reg<=csr_data;//csrr,csrrw,csrrwi
     end                 
     TYPE_J:begin
-            w_data_reg=pc+4;//jal
+            w_data_reg<=pc_ex+4;//jal
     end
     TYPE_U1:begin
-            w_data_reg=pc+imm;//auipc  
+            w_data_reg<=pc_ex+imm_ex;//auipc  
     end
     TYPE_U0:begin
-            w_data_reg=imm;  //lui
+            w_data_reg<=imm_ex;  //lui
     end
     TYPE_R:begin
-        case(fun)
+        case(fun_ex)
             3'b000:begin
-                if(imm[6:0]==7'b0000000) begin
-                    w_data_reg=src1+src2;//add
+                if(imm_ex[6:0]==7'b0000000) begin
+                    w_data_reg<=src1_ex+src2_ex;//add
                 end
-                else if(imm[6:0]==7'b0000001) begin
-                    w_data_reg=$signed(src1)*$signed(src2);//CBD
+                else if(imm_ex[6:0]==7'b0000001) begin
+                    w_data_reg<=$signed(src1_ex)*$signed(src2_ex);//CBD
                 end
-                else if(imm[6:0]==7'b0100000)begin
-                    w_data_reg=src1-src2;//sub or neg
+                else if(imm_ex[6:0]==7'b0100000)begin
+                    w_data_reg<=src1_ex-src2_ex;//sub or neg
                 end
                 else begin
-                    w_data_reg=32'hffffffff;  
+                    w_data_reg<=32'hffffffff;  
                 end
             end
             3'b001:begin
-                if(imm[6:0]==7'b0000000) begin
-                    w_data_reg=src1 << src2[4:0];//sll
+                if(imm_ex[6:0]==7'b0000000) begin
+                    w_data_reg<=src1_ex << src2_ex[4:0];//sll
                 end
-                else if(imm[6:0]==7'b0000001) begin
-                    w_data_reg=mulh;//mulh
+                else if(imm_ex[6:0]==7'b0000001) begin
+                    w_data_reg<=mulh;//mulh
                 end
                 else begin
-                    w_data_reg=32'hffffffff;  
+                    w_data_reg<=32'hffffffff;  
                 end
             end
             3'b010:begin
-                w_data_reg=($signed(src1)<$signed(src2))?32'b1:32'b0;//slt
+                w_data_reg<=($signed(src1_ex)<$signed(src2_ex))?32'b1:32'b0;//slt
             end
             3'b011:begin
-                if(imm[6:0]==7'b0000000)begin
-                w_data_reg=(src1<src2)?32'b1:32'b0;//sltu
+                if(imm_ex[6:0]==7'b0000000)begin
+                w_data_reg<=(src1_ex<src2_ex)?32'b1:32'b0;//sltu
                 end
-                else if(imm[6:0]==7'b0000001)begin
-                w_data_reg=mul_unsigned;           //mulhu
+                else if(imm_ex[6:0]==7'b0000001)begin
+                w_data_reg<=mul_unsigned;           //mulhu
                 end
                 else begin
-                  w_data_reg=32'hffffffff;  
+                  w_data_reg<=32'hffffffff;  
                 end
             end
             3'b100:begin
-                if(imm[6:0]==7'b0000000) begin
-                    w_data_reg=src1^src2;//xor
+                if(imm_ex[6:0]==7'b0000000) begin
+                    w_data_reg<=src1_ex^src2_ex;//xor
                 end
-                else if(imm[6:0]==7'b0000001) begin
-                    w_data_reg=$signed(src1)/$signed(src2);//div
+                else if(imm_ex[6:0]==7'b0000001) begin
+                    w_data_reg<=$signed(src1_ex)/$signed(src2_ex);//div
                 end
                 else begin
-                    w_data_reg=32'hffffffff;  
+                    w_data_reg<=32'hffffffff;  
                 end
             end
             3'b101:begin
-                if(imm[6:0]==7'b0000000) begin
-                    w_data_reg=src1 >> src2[4:0];//srl
+                if(imm_ex[6:0]==7'b0000000) begin
+                    w_data_reg<=src1_ex >> src2_ex[4:0];//srl
                 end
-                else if(imm[6:0]==7'b0000001) begin
-                    w_data_reg=src1/src2;//divu
+                else if(imm_ex[6:0]==7'b0100000) begin
+                   w_data_reg<=($signed(src1_ex)>>>(src2_ex[4:0]));//sra
                 end
-                else if(imm[6:0]==7'b0100000) begin
-                   w_data_reg=($signed(src1)>>>(src2[4:0]));//sra
+                else if(imm_ex[6:0]==7'b0000001) begin
+                    w_data_reg<=src1_ex/src2_ex;//divu
                 end
                 else begin
-                    w_data_reg=32'hffffffff;  
+                    w_data_reg<=32'hffffffff;  
                 end
             end
             3'b110:begin
-                if(imm[6:0]==7'b0000000) begin
-                    w_data_reg=src1|src2;//or
+                if(imm_ex[6:0]==7'b0000000) begin
+                    w_data_reg<=src1_ex|src2_ex;//or
                 end
-                else if(imm[6:0]==7'b0000001)begin
-                    w_data_reg=$signed(src1)%$signed(src2);//rem
+                else if(imm_ex[6:0]==7'b0000001) begin
+                    w_data_reg<=$signed(src1_ex)%$signed(src2_ex);//remu
                 end
                 else begin
-                    w_data_reg=32'hffffffff;  
+                    w_data_reg<=32'hffffffff;  
                 end
             end
             3'b111:begin
-                if(imm[6:0]==7'b0000000) begin
-                    w_data_reg=src1&src2;//and
+                if(imm_ex[6:0]==7'b0000000) begin
+                    w_data_reg<=src1_ex&src2_ex;//and
                 end
-                else if(imm[6:0]==7'b0000001) begin
-                    w_data_reg=src1%src2;//remu
+                else if(imm_ex[6:0]==7'b0000001) begin
+                    w_data_reg<=src1_ex%src2_ex;//remu
                 end
                 else begin
-                    w_data_reg=32'hffffffff;  
+                    w_data_reg<=32'hffffffff;  
                 end
             end
-            default:w_data_reg=32'hffffffff;  
+            default:w_data_reg<=32'hffffffff;  
         endcase
     end
-    default:w_data_reg=32'hffffffff;  
+    default:w_data_reg<=32'hffffffff;  
     endcase
+    end
 end
 assign w_data=w_data_reg;
 
 reg [DATA_WIDTH-1:0] csr_data;
 wire csr_wen;
+//YSYX 的ASCII码 ，和我的学号
+//reg [DATA_WIDTH-1:0] mvendorid;
+//reg [DATA_WIDTH-1:0] marchid;
 
 reg [DATA_WIDTH-1:0] m_status;
 reg [DATA_WIDTH-1:0] m_cause;
@@ -354,7 +457,7 @@ initial begin
 end
 
 always@(*)begin
-     case (imm[11:0])
+     case (imm_ex[11:0])
         CSR_MSTATUS:begin
             csr_data=m_status;        
         end 
@@ -367,27 +470,33 @@ always@(*)begin
         CSR_MCAUSE:begin
             csr_data=m_cause;
         end
+        CSR_MVENDORID:begin
+            csr_data=MVENDORID;
+        end
+        CSR_MARCHID:begin
+            csr_data=MARCHID;
+        end
         default:csr_data=32'hffffffff;
         endcase 
 end
 
-always @(posedge clk) begin
+always @(posedge clock) begin
     if(csr_wen)begin
-        case (imm[11:0])
+        case (imm_ex[11:0])
             CSR_MSTATUS:begin
-                m_status<=src1;        
+                m_status<=src1_ex;        
             end 
             CSR_MTVEC:begin
-                m_tvec<=src1;        
+                m_tvec<=src1_ex;        
             end
             CSR_MEPC:begin
-                m_epc<=src1;        
+                m_epc<=src1_ex;        
             end
             CSR_MCAUSE:begin
-                m_cause<=src1;        
+                m_cause<=src1_ex;        
             end
             CSR_ECALL:begin
-                m_epc<=pc;
+                m_epc<=pc_ex;
                 m_cause<=YIELD;        
             end
             default:m_epc<=32'hffffffff;
@@ -396,16 +505,16 @@ always @(posedge clk) begin
 end
 
 
-    assign csr_wen=(ex_state==STATE_OUTPUT_WB)&&(opcode==TYPE_CSR)&&((fun==3'b001)|(fun==3'b101)|((fun==3'b000)&&(imm[11:0]==CSR_ECALL))) ;
+    assign csr_wen=(ex_state==STATE_OUTPUT_WB)&&(opcode_ex==TYPE_CSR)&&((fun_ex==3'b001)|(fun_ex==3'b101)|((fun_ex==3'b000)&&(imm_ex[11:0]==CSR_ECALL))) ;
 
-    assign mulh=signed_mulh(src1,src2);
-    assign mul_unsigned=unsigned_mulh(src1,src2);
+    assign mulh=signed_mulh(src1_ex,src2_ex);
+    assign mul_unsigned=unsigned_mulh(src1_ex,src2_ex);
 
-    assign mem_w_valid=(ex_state==STATE_STORE);
+    assign lsu_ex_w_valid=(ex_state==STATE_STORE);
 
-    assign w_finish_sim = (opcode == 7'b1110011)&&(imm==1)&&(fun==3'b000);
-    assign snpc=pc+4; //默认情况下，下一条指令地址为当前指令地址+4
-    assign wen=((opcode==TYPE_R) || (opcode==TYPE_U0) || (opcode==TYPE_U1) || (opcode==TYPE_I0) || (opcode==TYPE_I1) || ((opcode==TYPE_I2)) || ((opcode==TYPE_J)&& (w_addr != 0))|| ((opcode==TYPE_CSR)&& (w_addr != 0))); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器
+    assign w_finish_sim = (opcode_ex == 7'b1110011)&&(imm_ex==1)&&(fun_ex==3'b000);
+    assign snpc=pc_ex+4; //默认情况下，下一条指令地址为当前指令地址+4
+    assign wen=((opcode_ex==TYPE_R) || (opcode_ex==TYPE_U0) || (opcode_ex==TYPE_U1) || (opcode_ex==TYPE_I0) || (opcode_ex==TYPE_I1) || ((opcode_ex==TYPE_I2)) || ((opcode_ex==TYPE_J)&& (w_addr_ex != 0))|| ((opcode_ex==TYPE_CSR)&& (w_addr_ex != 0))); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器
 
 endmodule
 

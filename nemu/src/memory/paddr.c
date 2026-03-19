@@ -18,13 +18,16 @@
 #include <device/mmio.h>
 #include <isa.h>
 
-#if   defined(CONFIG_PMEM_MALLOC)
+#if defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
+static uint8_t *mrom = NULL;
+static uint8_t *sram = NULL;
 #else // CONFIG_PMEM_GARRAY
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
-#define DIFF_ENABLE 1
+
+#define DIFF_ENABLE 0
 
 #if DIFF_ENABLE
 #define CONFIG_RTC_MMIO 0xa0000048
@@ -59,42 +62,70 @@ void init_mem() {
 #if   defined(CONFIG_PMEM_MALLOC)
   pmem = malloc(CONFIG_MSIZE);
   assert(pmem);
+  mrom = malloc(MROM_SIZE);
+  assert(mrom);
+  sram = malloc(SRAM_SIZE);
+  assert(sram);
 #endif
-  IFDEF(CONFIG_MEM_RANDOM, memset(pmem, rand(), CONFIG_MSIZE));
+  //IFDEF(CONFIG_MEM_RANDOM, memset(pmem, rand(), CONFIG_MSIZE));
+  IFDEF(CONFIG_MEM_RANDOM, memset(mrom, rand(), MROM_SIZE));
+  IFDEF(CONFIG_MEM_RANDOM, memset(sram, rand(), SRAM_SIZE));
   Log("physical memory area [" FMT_PADDR ", " FMT_PADDR "]", PMEM_LEFT, PMEM_RIGHT);
+  Log("mrom area [" FMT_PADDR ", " FMT_PADDR "]", MROM_BASE, MROM_BASE + MROM_SIZE - 1);
+  Log("sram area [" FMT_PADDR ", " FMT_PADDR "]", SRAM_BASE, SRAM_BASE + SRAM_SIZE - 1);
 }
 
-word_t paddr_read(paddr_t addr, int len) {  
-  //printf("program is reading nemu memory: 0x%x \n", addr);
-  #ifdef CONFIG_MTRACE
-    //printf("program is reading memory: 0x%x \n", addr);
-  #endif
+
+word_t paddr_read(paddr_t addr, int len) {
+#ifdef CONFIG_MTRACE
+  // printf("program is reading memory: 0x%x \n", addr);
+#endif
+
+  // 1) pmem（NEMU原本物理内存）
   if (likely(in_pmem(addr))) return pmem_read(addr, len);
+
+  // 2) MROM / SRAM（新增的两段“真实内存”）
+  if (in_mrom(addr)) return host_read(mrom + (addr - MROM_BASE), len);
+  if (in_sram(addr)) return host_read(sram + (addr - SRAM_BASE), len);
+
+  // 3) 设备MMIO（保持原有API/框架）
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
 
-  #if DIFF_ENABLE
-    if (addr>=CONFIG_RTC_MMIO&&addr<CONFIG_RTC_MMIO+8) return 0;
-    if (addr>=CONFIG_VGA_CTL_MMIO&&addr<CONFIG_VGA_CTL_MMIO+8) return 0;
-    if (addr>=CONFIG_KBD_MMIO&&addr<CONFIG_KBD_MMIO+8) return 0;
-  #endif
-  
-  out_of_bound(addr, "read");  // 传递 "read" 作为操作类型
+  // 4) DIFF_ENABLE 的兜底假设备（仅用于避免nemu缺设备导致崩）
+#if DIFF_ENABLE
+  if (addr >= CONFIG_RTC_MMIO     && addr < CONFIG_RTC_MMIO + 8) return 0;
+  if (addr >= CONFIG_VGA_CTL_MMIO && addr < CONFIG_VGA_CTL_MMIO + 8) return 0;
+  if (addr >= CONFIG_KBD_MMIO     && addr < CONFIG_KBD_MMIO + 8) return 0;
+#endif
+
+  out_of_bound(addr, "read");
   return 0;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  #ifdef CONFIG_MTRACE
-    printf("program is writing 0x%08x to memory: 0x%x \n", data, addr);
-  #endif
+#ifdef CONFIG_MTRACE
+  printf("program is writing 0x%08x to memory: 0x%x \n", data, addr);
+#endif
+  if (in_mrom(addr)) {
+    host_write(mrom + (addr - MROM_BASE), len, data);
+    //printf("program is writing 0x%08x to memory: 0x%x \n", data, addr);
+    return;
+  }
+  if (in_sram(addr)) {
+    host_write(sram + (addr - SRAM_BASE), len, data);
+    //printf("program is writing 0x%08x to memory: 0x%x \n", data, addr);
+    return;
+  }
   if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
 
-  #if DIFF_ENABLE
-  //printf("program is writing data 0x%08x to nemu memory: 0x%x \n", data, addr);
-  if (addr>=CONFIG_SERIAL_MMIO&&addr<CONFIG_SERIAL_MMIO+8) return;
-  if (addr>=CONFIG_FB_ADDR&&addr<CONFIG_FB_ADDR+VMEM_SIZE) return ;
-  if (addr>=CONFIG_VGA_CTL_MMIO&&addr<CONFIG_VGA_CTL_MMIO+8) return ;
-  #endif
+  // 4) DIFF_ENABLE 的兜底假设备（写丢弃）
+#if DIFF_ENABLE
+  if (addr >= CONFIG_SERIAL_MMIO  && addr < CONFIG_SERIAL_MMIO + 8) return;
+  if (addr >= CONFIG_FB_ADDR      && addr < CONFIG_FB_ADDR + VMEM_SIZE) return;
+  if (addr >= CONFIG_VGA_CTL_MMIO && addr < CONFIG_VGA_CTL_MMIO + 8) return;
+#endif
 
-  out_of_bound(addr, "write");  // 传递 "write" 作为操作类型
+  out_of_bound(addr, "write");
 }

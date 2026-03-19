@@ -40,7 +40,7 @@ static int cmd_c(char *args) {
 
 static int cmd_q(char *args) {
    // printf("you have entered the cmd q \n");
-    dut->exit_code= 0;
+    //dut->exit_code= 0;
     finish_sim();
     return 0;
 }
@@ -88,7 +88,7 @@ static int cmd_info(char *args) {
     //char *arg =strtok()
     if(strcmp("r",args) == 0) {
       for (int i = 0; i < 32; i++) {
-          printf("ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[%d]: 0x%08x\n", i, dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i]);
+          printf("ysyx_24110005_NPC__DOT__reg_rd__DOT__rf[%d]: 0x%08x\n", i, dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_rf__DOT__rf[i]);
       }
     }
 

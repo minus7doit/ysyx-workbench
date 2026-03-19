@@ -1,113 +1,103 @@
-module ysyx_24110005_ifu#(
-    parameter DATA_WIDTH=32,
-    parameter ADDR_WIDTH=32
+module ysyx_24110005_ifu #(
+    parameter DATA_WIDTH = 32,
+    parameter ADDR_WIDTH = 32
 )(
-    input  clk,
-    input  rst,
-    input  [ADDR_WIDTH-1:0] inst_ar_addr,
-    output [DATA_WIDTH-1:0] current_inst,
-    input   bresp,
-    input   if_r_ready,
-    output  if_r_valid
+    input                    clock,
+    input                    reset,
+
+    // core side
+    input   [DATA_WIDTH-1:0] i_pc,
+    input                    i_ifu_dec_ready,
+    input                    if_bresp,
+
+    output  [DATA_WIDTH-1:0] o_current_inst,
+    output                   o_ifu_dec_r_valid,
+
+    // ================= AXI4 Read Address (AR) =================
+    output                   o_ifu_arvalid,
+    input                    i_ifu_arready,
+    output  [ADDR_WIDTH-1:0] o_ifu_araddr,
+    output  [3:0]            o_ifu_arid,
+    output  [7:0]            o_ifu_arlen,
+    output  [2:0]            o_ifu_arsize,
+    output  [1:0]            o_ifu_arburst,
+
+    // ================= AXI4 Read Data (R) =================
+    output                   o_ifu_rready,
+    input                    i_ifu_rvalid,
+    input   [DATA_WIDTH-1:0] i_ifu_rdata,
+    input   [1:0]            i_ifu_rresp,
+    input                    i_ifu_rlast,
+    input   [3:0]            i_ifu_rid
 );
 
-reg if_ar_valid;
-wire if_ar_ready;
-wire if_aw_ready;
+  // ------------------------------------------------------------
+  // 原 IFU 的最小逻辑：只控制 ar_valid
+  // ------------------------------------------------------------
+  reg r_ifu_ar_valid;
 
-wire if_aw_valid;
-wire [DATA_WIDTH-1:0]if_wdata;
-wire if_w_ready;
-wire if_w_valid;
-
-wire if_bresp;
-wire if_bvalid;
-wire if_bready;
-
-//wire ar_valid_latency;
-
-
-always@(posedge clk or posedge rst)begin
-        if(rst) 
-            if_ar_valid<=1'b1;
-        else
-        begin
-        if(bresp)
-            if_ar_valid<=1'b1;
-        else if(if_ar_valid&&if_ar_ready)
-        //else if(ar_valid_latency&&if_ar_ready)
-            if_ar_valid<=1'b0;
-        else
-            if_ar_valid<=if_ar_valid;
-        end
-end
-
-
-/*wire [7:0]latency;
-reg  [7:0]r_latency;
-reg  [7:0]latency_cnt;
-wire      lat_flag;
-
-ysyx_24110005_LFSR #(
-.DATA_WIDTH(8)
-)rand_gen(
-.clk(clk),
-.rst(rst),
-.o_data(latency)
-);
-
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
-        r_latency<=8'b0;
+  always @(posedge clock or posedge reset) begin
+    if (reset) begin
+      r_ifu_ar_valid <= 1'b1;
+    end else begin
+      if (if_bresp) begin
+        r_ifu_ar_valid <= 1'b1;
+      end else if (o_ifu_arvalid && i_ifu_arready) begin
+        r_ifu_ar_valid <= 1'b0;
+      end else begin
+        r_ifu_ar_valid <= r_ifu_ar_valid;
+      end
     end
-    if(bresp)
-        r_latency <=latency;
-    else 
-        r_latency <=r_latency;
-end
+  end
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
-        latency_cnt<=8'b0;
+  reg [DATA_WIDTH-1:0]r_cur_inst;
+  reg r_ifu_dec_rvalid;
+  always @(posedge clock or posedge reset) begin
+    if (reset) begin
+      r_cur_inst <= 32'b0;
+    end else begin
+      if (i_ifu_rvalid) 
+        r_cur_inst <= i_ifu_rdata;
+      else 
+        r_cur_inst <= r_cur_inst;
     end
-    else begin
-        if((latency_cnt<r_latency)&&(if_ar_valid))
-            latency_cnt <=latency_cnt+1;
-        else if(latency_cnt==r_latency)
-            latency_cnt<=8'b0;
+  end
+  always @(posedge clock or posedge reset) begin
+    if (reset) begin
+      r_ifu_dec_rvalid <= 1'b0;
+    end else begin
+      if (i_ifu_rvalid) 
+        r_ifu_dec_rvalid <= 1'b1;
+      else
+        r_ifu_dec_rvalid <= 1'b0; 
     end
-end
-assign lat_flag=(latency_cnt==r_latency);
-assign ar_valid_latency=lat_flag&&if_ar_valid;*/
+  end
+  // ------------------------------------------------------------
+  // AXI4 AR：地址 = PC，其余字段给默认“单拍读”
+  // ------------------------------------------------------------
+  assign o_ifu_arvalid = r_ifu_ar_valid;
+  assign o_ifu_araddr  = i_pc;
 
+  // 多出来的输出端口：给固定合法值（等价“置默认/置0”）
+  assign o_ifu_arid    = 4'd0;
+  assign o_ifu_arlen   = 8'd0;       // 1 beat
+  assign o_ifu_arsize  = 3'd2;       // 4 bytes (2^2)
+  assign o_ifu_arburst = 2'b01;      // INCR
 
-inst_rom #(
-    .DATA_WIDTH(DATA_WIDTH),
-    .ADDR_WIDTH(DATA_WIDTH)
-)IF_Sram(
-    .clk(clk),
-    .rst(rst),
-    .inst_ar_addr(inst_ar_addr),
-    .if_ar_valid(if_ar_valid),
-   // .if_ar_valid(ar_valid_latency),
-    .if_ar_ready(if_ar_ready),
-    .current_inst(current_inst),
-    .if_r_ready(if_r_ready),
-    .if_r_valid(if_r_valid),
-    .inst_aw_addr(inst_ar_addr),
-    .if_aw_ready(if_aw_ready), 
-    .if_aw_valid(if_aw_valid),
-    .if_wdata(if_wdata),
-    .if_w_valid(if_w_valid),
-    .if_w_ready(if_w_ready),
-    .bready(if_bready),
-    .bvalid(if_bvalid),
-    .bresp(if_bresp)
-);
+  // ------------------------------------------------------------
+  // AXI4 R：只用 rvalid + rdata，其他输入悬空（不使用）
+  // ------------------------------------------------------------
+  assign o_ifu_rready      = i_ifu_dec_ready;
+  assign o_current_inst    = r_cur_inst;
+  assign o_ifu_dec_r_valid = r_ifu_dec_rvalid;
 
-
-assign if_bready=1'b0;
-assign if_aw_valid=1'b0;
-assign if_w_valid=1'b0;
+  // ------------------------------------------------------------
+  // 多余输入端口悬空：避免 Verilator UNUSED 警告（可选）
+  // ------------------------------------------------------------
+  /* verilator lint_off UNUSED */
+  wire [1:0] _unused_rresp = i_ifu_rresp;
+  wire       _unused_rlast = i_ifu_rlast;
+  wire [3:0] _unused_rid   = i_ifu_rid;
+  /* verilator lint_on UNUSED */
 
 endmodule

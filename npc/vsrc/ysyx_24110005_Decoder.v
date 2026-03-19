@@ -4,8 +4,8 @@ module ysyx_24110005_Decoder #(
    parameter OP_WIDTH=7,
    parameter FUN_WIDTH=3
 ) (    
-    input   clk,
-    input   rst,
+    input   clock,
+    input   reset,
     input  [DATA_WIDTH-1:0]inst,
     input   fetch_dec_valid,
     output  fetch_dec_ready, 
@@ -15,7 +15,6 @@ module ysyx_24110005_Decoder #(
     output [DATA_WIDTH-1:0]dec_exc_imm,
     output [FUN_WIDTH-1:0]dec_exc_fun,
     output [OP_WIDTH-1:0]dec_exc_opcode,
-    
     output mem_ar_valid,
     input  mem_ar_ready,
 
@@ -53,9 +52,8 @@ wire [DATA_WIDTH-1:0]imm;
 wire mem_load_en;
 reg [1:0] id_state;
 
-//reg dec_valid;
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
         id_state<=STATE_ID;
     end
     else begin
@@ -84,26 +82,10 @@ always @(posedge clk or posedge rst) begin
 end
 
 
-/*always @(posedge clk or posedge rst) begin
-    if(rst)begin
-        dec_valid<=1'b0;
-    end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            dec_valid<=1'b1;
-        end
-        else if(dec_exc_ready&&dec_exc_valid)begin
-            dec_valid<=1'b0;
-            end
-        else begin
-            dec_valid<=dec_valid;
-        end
-        end
-end*/
+
 assign fetch_dec_ready =(id_state==STATE_ID);
 assign dec_exc_valid  = (id_state==STATE_OUTPUT);
 
-//assign dec_exc_valid=dec_valid;
 assign opcode=inst[OP_WIDTH-1:0];
 assign fun=inst[14:12];//选择同一类型指令的其中一条指令
 assign r_addr1=inst[19:15];//寄存器地址1
@@ -130,8 +112,8 @@ imm_mux (
     })
 );
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
         r_waddr<={REG_ADDR_WIDTH{1'b0}};
     end
     else begin
@@ -144,8 +126,8 @@ always @(posedge clk or posedge rst) begin
     end
 end
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
         r_imm<={DATA_WIDTH{1'b0}};
     end
     else begin
@@ -158,8 +140,8 @@ always @(posedge clk or posedge rst) begin
     end
 end
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin     
+always @(posedge clock or posedge reset) begin
+    if(reset)begin     
         r_opcode<={OP_WIDTH{1'b0}};
     end
     else begin
@@ -172,8 +154,8 @@ always @(posedge clk or posedge rst) begin
     end
 end
 
-always @(posedge clk or posedge rst) begin
-    if(rst)begin     
+always @(posedge clock or posedge reset) begin
+    if(reset)begin     
         r_fun<={FUN_WIDTH{1'b0}};
     end
     else begin

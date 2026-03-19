@@ -2,7 +2,6 @@
 #include <klib-macros.h>
 #include <npc.h>
 extern char _heap_start;
-
 int main(const char *args);
 
 extern char _pmem_start;

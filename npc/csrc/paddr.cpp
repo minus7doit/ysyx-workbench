@@ -2,9 +2,11 @@
 #include "device.h"
 #define PMEM_LEFT  ((vaddr_t)PMEM_BASE)
 #define PMEM_RIGHT ((vaddr_t)PMEM_BASE + MEM_SIZE - 1)
-
 int32_t inst_mem[MEM_SIZE/4];//模拟指令存储器,每个周期只读出一条指令
-#define DIFF_ENABLE 0
+uint8_t flash[FLASH_SIZE];
+uint8_t mrom[MROM_SIZE];
+
+#define DIFF_ENABLE 1
 #if DIFF_ENABLE
 #define ZERO_OR_ONE 0
 #else

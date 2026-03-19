@@ -35,15 +35,15 @@ CPU_state npc_state = {}; // 初始化 NPC 状态
 
 void isa_reg_display(){
   for(int i = 0; i < 32; i++){
-    printf("gpr[%2d] : 0x%08x\n",i,dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i]);
+    printf("gpr[%2d] : 0x%08x\n",i,dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_rf__DOT__rf[i]);
   }
-  printf("pc : 0x%08x\n",dut->rootp->ysyx_24110005_NPC__DOT__pc);
+  printf("pc : 0x%08x\n",dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__pc);
 }
 
 
 void npc_state_init() {
   for(int i = 0; i < 32; i++) { 
-    npc_state.gpr[i] = dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i];
+    npc_state.gpr[i] = dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_rf__DOT__rf[i];
   }
   npc_state.pc = RESET_VECTOR ;
   printf("npc_state_update: npc_state.pc = %08x\n", npc_state.pc);
@@ -51,13 +51,13 @@ void npc_state_init() {
 
 
 bool isa_difftest_checkregs(CPU_state *ref, uint32_t pc) {
-  if(ref->pc != dut->rootp->ysyx_24110005_NPC__DOT__pc){
-    printf("pc mismatch: ref(nemu)    =  %08x ,  pc =  %08x\n",ref->pc, dut->rootp->ysyx_24110005_NPC__DOT__pc);
+  if(ref->pc != dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__pc){
+    printf("pc mismatch: ref(nemu)    =  %08x ,  pc =  %08x\n",ref->pc, dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__pc);
     return false;
   }
   for(int i = 0; i < 32;i++){
-   if(ref->gpr[i] != dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i]){
-      printf("gpr mismatch: ref(nemu) gpr[%d] =  %08x ,npc gpr[%d] = %08x" , i, ref->gpr[i], i, dut->rootp->ysyx_24110005_NPC__DOT__Write_Back_Unit__DOT__rf[i]);
+   if(ref->gpr[i] != dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_rf__DOT__rf[i]){
+      printf("gpr mismatch: ref(nemu) gpr[%d] =  %08x ,npc gpr[%d] = %08x" , i, ref->gpr[i], i, dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_rf__DOT__rf[i]);
       return false;
     }
   }
@@ -105,7 +105,7 @@ void init_difftest(char* ref_so_file, long img_size, int port) {
     npc_state_init();
     
     ref_difftest_init(port);
-    ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), img_size, DIFFTEST_TO_REF);
+    ref_difftest_memcpy(RESET_VECTOR, mrom, img_size, DIFFTEST_TO_REF);
     ref_difftest_regcpy(&npc_state, DIFFTEST_TO_REF);
 
 }
@@ -113,7 +113,7 @@ void init_difftest(char* ref_so_file, long img_size, int port) {
 static void checkregs(CPU_state *ref, vaddr_t pc) {
   if (!isa_difftest_checkregs(ref, pc)) {
     sim_break = true;
-    dut->exit_code=1;
+    //dut->exit_code=1;
     printf("\033[31mDifftest failed at pc =  %08x \033[31m\n", pc);
   }
 }

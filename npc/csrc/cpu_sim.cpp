@@ -2,19 +2,19 @@
 
 //void difftest_step(vaddr_t pc, vaddr_t npc);
 
-//#include "Vysyx_24110005_NPC__Dpi.h"
+//#include "VysyxSoCFull__Dpi.h"
 
 void cpu_sim(int n) {
     if(n == -1){
         while (!sim_break) {
-            if(sim_time <=3 ){
-                dut->rst = 1;
+            if(sim_time <=20 ){
+                dut->reset = 1;
             }
             else {
-                dut->rst = 0;
+                dut->reset = 0;
             }
             
-            dut->clk ^= 1;
+            dut->clock ^= 1;
             dut->eval();
             
             #if WAVE
@@ -28,28 +28,28 @@ void cpu_sim(int n) {
              #endif
 
             if(sim_break) {
-            if(!dut->exit_code){
+            /*if(!dut->exit_code){
                 printf("\033[32mNPC hit a good trap. Ending simulation.\033[32m");
                 printf("npc cycle = %ld\n", sim_time/2);
             } 
-            else {
+            else {*/
                 printf("\033[31mNPC hit a bad trap. Ending simulation");
-            }
+            //}
             break;
-    }
+            }
     }
 }
     else {
         for(int i = 0; i < 2*n; i++) {
             
-            if(sim_time <=3 ){
-                dut->rst = 1;
+            if(sim_time <= 20){
+                dut->reset = 1;
             }
             else {
-                dut->rst = 0;
+                dut->reset = 0;
             }
 
-            dut->clk ^= 1;
+            dut->clock ^= 1;
 
             dut->eval();
             #if WAVE
@@ -61,19 +61,19 @@ void cpu_sim(int n) {
             #endif
            
             if(sim_break) {
-                if(!dut->exit_code){
+               /* if(!dut->exit_code){
                    printf("\033[32mNPC hit a good trap. Ending simulation.\033[32m");
                    printf("npc cycle = %ld\n", sim_time/2);  
 
                 } 
-                else {
+                else {*/
                      printf("\033[31mNPC hit a bad trap. Ending simulation.\033[31m");
-                }
+                //}
                 break;
             }
         }
 }
-    if(dut->rst) {
+    if(dut->reset) {
              printf("\033[34mwaiting for reset finish\033[34m\n");   
     }
 }
