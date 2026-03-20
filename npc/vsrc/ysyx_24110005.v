@@ -144,7 +144,7 @@ module ysyx_24110005(
       if (!reset) begin
         //device_update();
         if (fetch_dec_valid) begin
-          //  inst_trace(pc, current_inst, dnpc);
+         //  inst_trace(pc, current_inst, dnpc);
            //function_trace(pc, current_inst, dnpc);
         end
         if ((exc_wb_ready && exc_wb_valid) || bresp) begin

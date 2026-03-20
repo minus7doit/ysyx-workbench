@@ -19,8 +19,8 @@
 #define RESET_VECTOR (PMEM_BASE + CONFIG_PC_RESET_OFFSET)
 #define MROM_BASE 0x20000000ull     // 改成你工程的 MROM_BASE
 #define MROM_SIZE 0x1000       // 4KB，必须和NEMU一致
-#define MTRACE 1
-#define WAVE 1
+#define MTRACE 0
+#define WAVE 0
 #define CONFIG_DEVICE 1
 
 

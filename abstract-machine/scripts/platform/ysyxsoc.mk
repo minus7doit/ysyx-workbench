@@ -19,14 +19,18 @@ SOCFLAGS  += -l $(shell dirname $(IMAGE).elf)/ysyxsoc-log.txt
 
 # mem-test 作为 SRAM payload；bootloader 和其他程序仍走普通链接脚本
 ifeq ($(NAME),microbench)
-  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_psram_exec.ld
+  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_psram_all.ld
   CFLAGS   += -Os
 else ifeq ($(NAME),rtthread)
   LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_rtthread_psram.ld
   CFLAGS   += -Os
-else ifeq ($(NAME),psram_ls_test)
-  LDSCRIPT = $(AM_HOME)/scripts/lb_lh_test.ld
+else ifeq ($(NAME),mem-test)
+  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_psram_all.ld
   CFLAGS   += -Os
+else ifeq ($(NAME),fsbl)
+  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_boot2.ld
+  CFLAGS   += -Os
+  LDFLAGS += -Map=$(IMAGE).map
 else
   LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc.ld
   SOCFLAGS += -f $(IMAGE).elf
@@ -56,10 +60,8 @@ image: image-dep
 	@echo + OBJCOPY "->" $(IMAGE_REL).bin
 ifeq ($(NAME),rtthread)
 	@$(OBJCOPY) -O binary \
-		-j .text \
-		-j .rodata \
-		-j .data \
 		-R .bss -R .sbss -R .comment -R .riscv.attributes \
+		-R .debug* -R .note* \
 		$(IMAGE).elf $(IMAGE).bin
 else
 	@$(OBJCOPY) -O binary -R .bss -R .sbss -R .comment -R .riscv.attributes $(IMAGE).elf $(IMAGE).bin

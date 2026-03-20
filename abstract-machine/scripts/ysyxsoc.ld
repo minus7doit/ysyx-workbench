@@ -14,7 +14,6 @@ MEMORY {
 }
 
 SECTIONS {
-  /* code / rodata in FLASH */
   . = ORIGIN(FLASH);
   .text : ALIGN(4) {
     _text_start = .;
@@ -25,18 +24,16 @@ SECTIONS {
     _text_end = ALIGN(4);
   } > FLASH
 
-  /* data in PSRAM, loaded from FLASH */
   . = ORIGIN(PSRAM);
   .data : AT(ALIGN(_text_end, 4)) {
     _data_start = .;
-    _data_vma   = .;
+    _data_vma   = .;    /* 关键：补这个 */
     *(.data*)
     *(.sdata*)
     _data_end = ALIGN(8);
   } > PSRAM
   _data_lma = LOADADDR(.data);
 
-  /* bss in PSRAM */
   .bss (NOLOAD) : ALIGN(8) {
     _bss_start = .;
     *(.bss*)
@@ -45,7 +42,6 @@ SECTIONS {
     _bss_end = ALIGN(8);
   } > PSRAM
 
-  /* heap in PSRAM */
   . = ALIGN(8);
   _heap_start = .;
   __heap_start = _heap_start;
@@ -56,6 +52,5 @@ SECTIONS {
   end = _heap_start;
   _end = _heap_start;
 
-  /* stack in SRAM */
   _stack_top = ORIGIN(SRAM) + LENGTH(SRAM);
 }

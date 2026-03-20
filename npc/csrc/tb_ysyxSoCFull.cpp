@@ -48,7 +48,7 @@ extern void init_elf(const char *elf_file);
 
 /* payload 固定路径 */
 #ifndef PAYLOAD_BIN_PATH
-#define PAYLOAD_BIN_PATH "/home/minus7/ysyx-workbench/am-kernels/tests/cpu-tests/build/mem-test-riscv32e-ysyxsoc.bin"
+#define PAYLOAD_BIN_PATH "/home/minus7/Temp/rt-thread-am/bsp/abstract-machine/build/rtthread-riscv32e-ysyxsoc.bin"
 #endif
 
 static inline uint32_t read_u32_le(const uint8_t *p) {
@@ -195,22 +195,35 @@ int main(int argc, char **argv, char **env) {
   size_t flash_img_size = 0;
   size_t payload_img_size = 0;
 
-  if (img_bin) {
-    printf("[FLASH] load boot image bin: %s\n", img_bin);
-    flash_img_size = (size_t)init_flash(img_bin);
-  } else {
-    printf("\033[34mNo .bin image is given. use default bootloader.bin\033[0m\n");
-    flash_img_size = (size_t)init_flash("bootloader.bin");
-  }
+ if (img_bin) {
+  printf("[FLASH] load boot image bin: %s\n", img_bin);
+  flash_img_size = (size_t)init_flash(img_bin);
+} else {
+  printf("\033[34mNo .bin image is given. use default bootloader.bin\033[0m\n");
+  flash_img_size = (size_t)init_flash("bootloader.bin");
+}
+
+if (flash_img_size > (size_t)FLASH_OFFSET) {
+  printf("[FLASH] ERROR: boot image too large! size=0x%zx, FLASH_OFFSET=0x%08x\n",
+         flash_img_size, FLASH_OFFSET);
+  assert(0);
+}
 
 #if BOOTLOADER_LOAD
   printf("[BOOTLOADER_LOAD] enabled\n");
   payload_img_size = (size_t)init_flash_load(PAYLOAD_BIN_PATH);
+
+  if ((size_t)FLASH_OFFSET + payload_img_size > FLASH_SIZE) {
+    printf("[FLASH] ERROR: payload out of flash range! off=0x%08x size=0x%zx flash=0x%08x\n",
+           FLASH_OFFSET, payload_img_size, FLASH_SIZE);
+    assert(0);
+  }
 #else
   printf("[BOOTLOADER_LOAD] disabled, skip init_flash_load()\n");
 #endif
 
-  size_t total_flash_used = flash_img_size;
+
+size_t total_flash_used = flash_img_size;
 #if BOOTLOADER_LOAD
   if ((size_t)FLASH_OFFSET + payload_img_size > total_flash_used) {
     total_flash_used = (size_t)FLASH_OFFSET + payload_img_size;

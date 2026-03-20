@@ -2,6 +2,8 @@
 #include <klib-macros.h>
 #include <ysyxsoc.h>
 #include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #define soc_trap(code) asm volatile("mv a0, %0; ebreak" : :"r"(code))
 
@@ -38,15 +40,10 @@ void putch(char ch) {
   mmio_write8(UART_BASE + UART_THR, (uint8_t)ch);
 }
 
-/*static uint32_t csr_read(uint32_t csr_id) {
-  uint32_t value;
-  asm volatile("csrr %0, %1" : "=r"(value) : "i"(csr_id));
-  return value;
-}*/
-
 void halt(int code) {
   soc_trap(code);
-  while (1);
+  while (1) {
+  }
 }
 
 static uintptr_t brk_ptr = 0;
@@ -67,34 +64,36 @@ void *heap_alloc(ptrdiff_t inc) {
 
 extern int main(const char *args);
 
-extern char _heap_start;
-extern char _heap_end;
-extern char _bss_start;
-extern char _bss_end;
-
-static void mark(char c) {
+/*static void mark(char c) {
   putch(c);
   putch('\n');
-}
+}*/
 
+#ifndef APP_LOADED_BY_BOOTLOADER
 static void bss_init(void) {
   for (char *p = &_bss_start; p < &_bss_end; p++) {
     *p = 0;
   }
 }
+#endif
 
 void _trm_init(void) {
   uart_init();
-  mark('P');   // payload entered _trm_init
+  //mark('P');   // entered _trm_init
 
+#ifndef APP_LOADED_BY_BOOTLOADER
   bss_init();
-  mark('Q');   // bss ok
+ // mark('Q');   // bss ok
+#else
+  mark('B');   // bootloader already initialized bss/data
+#endif
 
   heap = RANGE(&_heap_start, &_heap_end);
-  mark('R');   // heap ok
+  brk_ptr = (uintptr_t)&_heap_start;
+  //mark('R');   // heap ok
 
   int ret = main(mainargs);
-  mark('X');   // main returned
+ // mark('X');   // main returned
 
   halt(ret);
 }
