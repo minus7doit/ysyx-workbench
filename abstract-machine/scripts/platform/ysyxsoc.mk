@@ -19,12 +19,12 @@ SOCFLAGS  += -l $(shell dirname $(IMAGE).elf)/ysyxsoc-log.txt
 
 # mem-test 作为 SRAM payload；bootloader 和其他程序仍走普通链接脚本
 ifeq ($(NAME),microbench)
-  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_psram_all.ld
+  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_sdram_all.ld
   CFLAGS   += -Os
 else ifeq ($(NAME),rtthread)
-  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_rtthread_psram.ld
+  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_rtthread_sdram.ld
   CFLAGS   += -Os
-else ifeq ($(NAME),mem-test)
+else ifeq ($(NAME),sdram_test)
   LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_psram_all.ld
   CFLAGS   += -Os
 else ifeq ($(NAME),fsbl)
@@ -43,7 +43,8 @@ LDFLAGS += --gc-sections -e _start
 LDFLAGS += --defsym=_mrom_start=0x20000000 \
            --defsym=_sram_start=0x0f000000 \
            --defsym=_flash_start=0x30000000 \
-           --defsym=_psram_start=0x80000000
+           --defsym=_psram_start=0x80000000 \
+           --defsym=_sdram_start=0xa0000000
 
 MAINARGS_MAX_LEN = 64
 MAINARGS_PLACEHOLDER = The insert-arg rule in Makefile will insert mainargs here.

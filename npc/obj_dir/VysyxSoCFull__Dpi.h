@@ -28,7 +28,7 @@ extern "C" {
     extern void function_trace(unsigned int pc, unsigned int inst, unsigned int npc);
     // DPI import at /home/minus7/ysyx-workbench/npc/./vsrc/ysyx_24110005.v:81:32
     extern void inst_trace(unsigned int pc, unsigned int inst, unsigned int npc);
-    // DPI import at /home/minus7/ysyx-workbench/npc/../ysyxSoC/build/ysyxSoCFull.v:5402:30
+    // DPI import at /home/minus7/ysyx-workbench/npc/../ysyxSoC/build/ysyxSoCFull.v:5443:30
     extern void mrom_read(int raddr, int* rdata);
 
 #ifdef __cplusplus

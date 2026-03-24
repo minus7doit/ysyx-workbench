@@ -3,8 +3,8 @@ module ysyx_24110005_Xbar #(
     parameter ADDR_WIDTH = 32,
 
     // 你也可以按你的 SoC 地址图改这里
-    parameter CLINT_ADDR_LEFT  = 32'hA000_0048,
-    parameter CLINT_ADDR_RIGHT = 32'hA000_004C
+    parameter CLINT_ADDR_LEFT  = 32'h0200_0000,
+    parameter CLINT_ADDR_RIGHT = 32'h0200_0004
 )(
     input  wire                  clock,
     input  wire                  reset,
