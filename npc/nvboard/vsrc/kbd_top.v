@@ -75,7 +75,7 @@ ps2_keyboard inst(
     .clk(clk),
     .clrn(~rst),
     .ps2_clk(ps2_clk),
-   .ps2_data(ps2_data),
+    .ps2_data(ps2_data),
     .data(data),
     .ready(ready),
     .nextdata_n(nextdata_n),

@@ -41,7 +41,7 @@ always @(posedge clk or posedge rst) begin
 
     always @(*) begin
         case(scan_code)
-         8'h1C: ascii = shift_pressed ? 8'h41 : 8'h61; // 'A' or 'a'
+        8'h1C: ascii = shift_pressed ? 8'h41 : 8'h61; // 'A' or 'a'
         8'h32: ascii = shift_pressed ? 8'h42 : 8'h62; // 'B' or 'b'
         8'h21: ascii = shift_pressed ? 8'h43 : 8'h63; // 'C' or 'c'
         8'h23: ascii = shift_pressed ? 8'h44 : 8'h64; // 'D' or 'd'

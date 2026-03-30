@@ -13,10 +13,11 @@ void cpu_sim(int n) {
             else {
                 dut->reset = 0;
             }
-            
             dut->clock ^= 1;
             dut->eval();
-            
+            #if CONFIG_NVBOARD
+            nvboard_update();
+            #endif
             #if WAVE
             m_trace->dump(sim_time);
             #endif
@@ -33,7 +34,7 @@ void cpu_sim(int n) {
                 printf("npc cycle = %ld\n", sim_time/2);
             } 
             else {*/
-                printf("\033[31mNPC hit a bad trap. Ending simulation");
+                //printf("\033[31mNPC hit a bad trap. Ending simulation");
             //}
             break;
             }
@@ -52,6 +53,9 @@ void cpu_sim(int n) {
             dut->clock ^= 1;
 
             dut->eval();
+             #if CONFIG_NVBOARD
+            nvboard_update();
+            #endif
             #if WAVE
             m_trace->dump(sim_time);
             #endif
@@ -67,7 +71,7 @@ void cpu_sim(int n) {
 
                 } 
                 else {*/
-                     printf("\033[31mNPC hit a bad trap. Ending simulation.\033[31m");
+                    // printf("\033[31mNPC hit a bad trap. Ending simulation.\033[31m");
                 //}
                 break;
             }

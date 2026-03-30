@@ -19,29 +19,28 @@
 #define UART_LSR 0x14
 #define UART_MSR 0x18
 #define UART_SCR 0x1c
-#define LCR_DLAB   (1 << 7)
-#define LSR_THRE   (1 << 5)   // THR Empty
+#define LCR_DLAB (1 << 7)
+#define LSR_THRE (1 << 5)   // THR Empty
+#define LSR_DR   (1 << 0) 
 #define MVENDORID 0xF11
 #define MARCHID 0xF12
 
-#define DEVICE_BASE 0xa0000000
 #define MMIO_BASE 0xa0000000
-#define SERIAL_PORT     (DEVICE_BASE + 0x00003f8)
-#define KBD_ADDR        (DEVICE_BASE + 0x0000060)
+#define DEVICE_BASE     (0xa0000000)
+#define SERIAL_PORT     (0x10000000)
+#define KBD_ADDR        (0x10011000)
 #define RTC_ADDR        (0x02000000)
-#define VGACTL_ADDR     (DEVICE_BASE + 0x0000100)
+#define VGACTL_ADDR     (0x21000000)
+#define SYNC_ADDR       (VGACTL_ADDR + 0x4)
+#define FB_ADDR         (VGACTL_ADDR + 0x8)
 #define AUDIO_ADDR      (DEVICE_BASE + 0x0000200)
 #define DISK_ADDR       (DEVICE_BASE + 0x0000300)
-#define FB_ADDR         (MMIO_BASE   + 0x1000000)
 #define AUDIO_SBUF_ADDR (MMIO_BASE   + 0x1200000)
 
 extern char _pmem_start;
 #define PMEM_SIZE (128 * 1024 * 1024)
 #define PMEM_END  ((uintptr_t)&_pmem_start + PMEM_SIZE)
-#define NEMU_PADDR_SPACE \
-  RANGE(&_pmem_start, PMEM_END), \
-  RANGE(FB_ADDR, FB_ADDR + 0x200000), \
-  RANGE(MMIO_BASE, MMIO_BASE + 0x1000) /* serial, rtc, screen, keyboard */
+
 
 
 #define PGSIZE    4096

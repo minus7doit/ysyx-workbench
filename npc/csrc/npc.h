@@ -21,9 +21,11 @@
 #define MROM_SIZE 0x1000       // 4KB，必须和NEMU一致
 #define MTRACE 0
 #define WAVE 0
-#define CONFIG_DEVICE 1
-
-
+#define CONFIG_DEVICE 0
+#define CONFIG_NVBOARD 1
+#if CONFIG_NVBOARD
+#include <nvboard.h>
+#endif
 extern VysyxSoCFull *dut; 
 extern VerilatedVcdC *m_trace;
 extern vluint64_t sim_time ;

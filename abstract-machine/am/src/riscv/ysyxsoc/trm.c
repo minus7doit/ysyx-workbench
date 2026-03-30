@@ -6,7 +6,17 @@
 #include <stdint.h>
 
 #define soc_trap(code) asm volatile("mv a0, %0; ebreak" : :"r"(code))
-
+//#define CSR_MVENDORID 0xf11
+//#define CSR_MARCHID   0xf12
+/*
+uint32_t csr_read(uint32_t csr_id){
+  uint32_t val = 0;
+  if(csr_id == CSR_MVENDORID)
+    asm volatile ("csrr %0, 0xf11" : "=r"(val));
+  else if (csr_id == CSR_MARCHID)
+    asm volatile ("csrr %0, 0xf12" : "=r"(val));
+  return val;
+}*/
 extern char _heap_start;
 extern char _heap_end;
 extern char _stack_top;
@@ -17,27 +27,20 @@ static const char mainargs[MAINARGS_MAX_LEN] = MAINARGS_PLACEHOLDER;
 
 Area heap = {};
 
-static inline uint8_t mmio_read8(uintptr_t addr) {
-  return *(volatile uint8_t *)addr;
-}
-
-static inline void mmio_write8(uintptr_t addr, uint8_t val) {
-  *(volatile uint8_t *)addr = val;
-}
 
 static void uart_init(void) {
-  mmio_write8(UART_BASE + UART_LCR, 0x03);
-  mmio_write8(UART_BASE + UART_LCR, 0x03 | LCR_DLAB);
-  mmio_write8(UART_BASE + UART_RBR /* DLL */, 0x01);
-  mmio_write8(UART_BASE + UART_IER /* DLM */, 0x00);
-  mmio_write8(UART_BASE + UART_LCR, 0x03);
-  mmio_write8(UART_BASE + UART_FCR, 0x06);
+  outb(UART_BASE + UART_LCR, 0x03);
+  outb(UART_BASE + UART_LCR, 0x03 | LCR_DLAB);
+  outb(UART_BASE + UART_RBR /* DLL */, 0x01);
+  outb(UART_BASE + UART_IER /* DLM */, 0x00);
+  outb(UART_BASE + UART_LCR, 0x03);
+  outb(UART_BASE + UART_FCR, 0x06);
 }
 
 void putch(char ch) {
-  while ((mmio_read8(UART_BASE + UART_LSR) & LSR_THRE) == 0) {
+  while ((inb(UART_BASE + UART_LSR) & LSR_THRE) == 0) {
   }
-  mmio_write8(UART_BASE + UART_THR, (uint8_t)ch);
+  outb(UART_BASE + UART_THR, (uint8_t)ch);
 }
 
 void halt(int code) {
@@ -64,11 +67,6 @@ void *heap_alloc(ptrdiff_t inc) {
 
 extern int main(const char *args);
 
-/*static void mark(char c) {
-  putch(c);
-  putch('\n');
-}*/
-
 #ifndef APP_LOADED_BY_BOOTLOADER
 static void bss_init(void) {
   for (char *p = &_bss_start; p < &_bss_end; p++) {
@@ -79,21 +77,23 @@ static void bss_init(void) {
 
 void _trm_init(void) {
   uart_init();
-  //mark('P');   // entered _trm_init
 
+  /*uint32_t mvendorid=csr_read(CSR_MVENDORID);
+  uint32_t marchid  =csr_read(CSR_MARCHID);
+  for (size_t i = 0; i < 4; i++)
+  {
+    uint8_t val =mvendorid>>((3-i)*8) & 0xFF;
+    printf("%c",val);
+  }
+  printf("-%d\n",marchid);*/
 #ifndef APP_LOADED_BY_BOOTLOADER
   bss_init();
- // mark('Q');   // bss ok
-#else
-  mark('B');   // bootloader already initialized bss/data
 #endif
 
   heap = RANGE(&_heap_start, &_heap_end);
   brk_ptr = (uintptr_t)&_heap_start;
-  //mark('R');   // heap ok
 
   int ret = main(mainargs);
- // mark('X');   // main returned
 
   halt(ret);
 }

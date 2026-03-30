@@ -48,8 +48,8 @@ module ysyx_24110005_Clint #(
 parameter CLINT_IDLE   = 2'b00;
 parameter CLINT_OUTPUT = 2'b01;
 
-parameter RTC_MMIO_LOW = 32'hA000_0048;
-parameter RTC_MMIO_HI  = 32'hA000_004C;
+parameter RTC_MMIO_LOW = 32'h02000000;
+parameter RTC_MMIO_HI  = 32'h02000004;
 
 reg [1:0] clint_state;
 

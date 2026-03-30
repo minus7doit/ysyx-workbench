@@ -19,7 +19,6 @@ void __am_timer_init() {
 }
 
 void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
-  //printf("timer in am is being read\n");
   uint64_t cycles=read_time() - boot_time;
   uptime->us = cycles*1000000/CPU_HZ;
 }
