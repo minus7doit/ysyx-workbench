@@ -10,7 +10,7 @@
 #include "VysyxSoCFull___024root.h"
 #include "svdpi.h"
 #include "VysyxSoCFull__Dpi.h"
-#define PMEM_BASE 0x20000000
+#define PMEM_BASE 0x30000000
 #define FLASH_BASE 0X30000000
 #define MEM_SIZE 0x08000000 // 128MB
 #define FLASH_SIZE 0x08000000 // 128MB
@@ -22,7 +22,7 @@
 #define MTRACE 0
 #define WAVE 0
 #define CONFIG_DEVICE 0
-#define CONFIG_NVBOARD 1
+#define CONFIG_NVBOARD 0
 #if CONFIG_NVBOARD
 #include <nvboard.h>
 #endif

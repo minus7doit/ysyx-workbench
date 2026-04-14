@@ -25,8 +25,8 @@ ifeq ($(NAME),microbench)
 else ifeq ($(NAME),rtthread)
   LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_rtthread_sdram.ld
   CFLAGS   += -Os
-else ifeq ($(NAME),sdram_test)
-  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_psram_all.ld
+else ifeq ($(NAME),smc)
+  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_sdram_all.ld
   CFLAGS   += -Os
 else ifeq ($(NAME),fsbl)
   LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_boot2.ld

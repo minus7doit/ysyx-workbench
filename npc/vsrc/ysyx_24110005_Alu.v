@@ -16,7 +16,7 @@ input [DATA_WIDTH-1:0] src2,
 input [DATA_WIDTH-1:0] imm ,
 input [OP_WIDTH-1:0]   opcode,
 input [FUN_WIDTH-1:0]  fun,
-
+input                  i_fencei,        // 新增
 
 output[DATA_WIDTH-1:0] dnpc,
 output[DATA_WIDTH-1:0] w_data,
@@ -28,7 +28,8 @@ input  lsu_ex_w_ready,
 input  bresp,
 output exc_wb_valid,
 input  exc_wb_ready,
-output w_finish_sim
+output w_finish_sim,
+output o_fencei_flush                // 新增
 );
 
 reg [REG_ADDR_WIDTH-1:0] w_addr_ex;
@@ -39,6 +40,7 @@ reg [DATA_WIDTH-1:0] src2_ex;
 reg [OP_WIDTH-1:0]   opcode_ex;
 reg [FUN_WIDTH-1:0]  fun_ex;
 reg [DATA_WIDTH-1:0] imm_ex;
+reg fencei_ex;
 
 wire [DATA_WIDTH-1:0]snpc;
 //wire wen;
@@ -157,21 +159,28 @@ end
 assign exc_wb_valid=(ex_state==STATE_OUTPUT_WB);
 assign dec_exc_ready=(ex_state==STATE_REC);
 
-
-
-
-always @(posedge clock) begin
-    if(dec_exc_ready&&dec_exc_valid)begin
-        src1_ex<=src1;
-        src2_ex<=src2;
-        imm_ex<=imm;
-        opcode_ex<=opcode;
-        fun_ex<=fun;
-        w_addr_ex<=w_addr;
-        pc_ex<=pc;
+always @(posedge clock or posedge reset) begin
+    if (reset) begin
+        src1_ex   <= {DATA_WIDTH{1'b0}};
+        src2_ex   <= {DATA_WIDTH{1'b0}};
+        imm_ex    <= {DATA_WIDTH{1'b0}};
+        opcode_ex <= {OP_WIDTH{1'b0}};
+        fun_ex    <= {FUN_WIDTH{1'b0}};
+        w_addr_ex <= {REG_ADDR_WIDTH{1'b0}};
+        pc_ex     <= {DATA_WIDTH{1'b0}};
+        fencei_ex <= 1'b0;
+    end
+    else if(dec_exc_ready&&dec_exc_valid) begin
+        src1_ex   <= src1;
+        src2_ex   <= src2;
+        imm_ex    <= imm;
+        opcode_ex <= opcode;
+        fun_ex    <= fun;
+        w_addr_ex <= w_addr;
+        pc_ex     <= pc;
+        fencei_ex <= i_fencei;
     end
 end
-
 
 reg [DATA_WIDTH-1:0] dnpc_reg;
 always@(posedge clock)begin
@@ -511,7 +520,7 @@ end
     assign mul_unsigned=unsigned_mulh(src1_ex,src2_ex);
 
     assign lsu_ex_w_valid=(ex_state==STATE_STORE);
-
+    assign o_fencei_flush = exc_wb_valid && exc_wb_ready && fencei_ex;
     assign w_finish_sim = (opcode_ex == 7'b1110011)&&(imm_ex==1)&&(fun_ex==3'b000);
     assign snpc=pc_ex+4; //默认情况下，下一条指令地址为当前指令地址+4
     assign wen=((opcode_ex==TYPE_R) || (opcode_ex==TYPE_U0) || (opcode_ex==TYPE_U1) || (opcode_ex==TYPE_I0) || (opcode_ex==TYPE_I1) || ((opcode_ex==TYPE_I2)) || ((opcode_ex==TYPE_J)&& (w_addr_ex != 0))|| ((opcode_ex==TYPE_CSR)&& (w_addr_ex != 0))); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器

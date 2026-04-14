@@ -2,6 +2,8 @@
 #include "device.h"
 #define PMEM_LEFT  ((vaddr_t)PMEM_BASE)
 #define PMEM_RIGHT ((vaddr_t)PMEM_BASE + MEM_SIZE - 1)
+#define FLASH_LEFT  ((vaddr_t)FLASH_BASE)
+#define FLASH_RIGHT ((vaddr_t)FLASH_BASE + FLASH_SIZE - 1)
 int32_t inst_mem[MEM_SIZE/4];//模拟指令存储器,每个周期只读出一条指令
 uint8_t flash[FLASH_SIZE];
 uint8_t mrom[MROM_SIZE];
@@ -14,18 +16,37 @@ uint8_t mrom[MROM_SIZE];
 #endif
 
 vaddr_t* guest_to_host(vaddr_t paddr) {
-    assert(paddr >= PMEM_BASE && paddr < PMEM_BASE + MEM_SIZE);
-    return (vaddr_t *)inst_mem + (paddr - PMEM_BASE)/4; //将物理地址转换为指针
+    assert(paddr >= PMEM_BASE && paddr < PMEM_BASE + FLASH_SIZE);
+    return (vaddr_t *)flash + (paddr - PMEM_BASE)/4; //将物理地址转换为指针
 }
 
 
-int out_of_bound(vaddr_t addr){
-    if (addr < PMEM_LEFT || addr > PMEM_RIGHT)
-    {
-        printf("\033[31m address = %08x is out of bound of pmem [%08x, %08x] at pc = %08x \033[31m\n", addr, PMEM_LEFT, PMEM_RIGHT, npc_cpu.pc);
-        return 0;
+static inline int in_range(vaddr_t addr, uint32_t l, uint32_t r) {
+    return (addr >= l) && (addr <= r);
+}
+
+int out_of_bound(vaddr_t addr) {
+    if (
+        in_range(addr, 0x02000000u, 0x0200ffffu) ||  // CLINT
+        in_range(addr, 0x0f000000u, 0x0fffffffu) ||  // SRAM
+        in_range(addr, 0x10000000u, 0x10000fffu) ||  // UART16550
+        in_range(addr, 0x10001000u, 0x10001fffu) ||  // SPI master
+        in_range(addr, 0x10002000u, 0x1000200fu) ||  // GPIO
+        in_range(addr, 0x10011000u, 0x10011007u) ||  // PS2
+        in_range(addr, 0x20000000u, 0x20000fffu) ||  // MROM
+        in_range(addr, 0x21000000u, 0x211fffffu) ||  // VGA
+        in_range(addr, 0x30000000u, 0x3fffffffu) ||  // Flash
+        in_range(addr, 0x40000000u, 0x7fffffffu) ||  // ChipLink MMIO
+        in_range(addr, 0x80000000u, 0x9fffffffu) ||  // PSRAM
+        in_range(addr, 0xa0000000u, 0xbfffffffu) ||  // SDRAM
+        in_range(addr, 0xc0000000u, 0xffffffffu)     // ChipLink MEM
+    ) {
+        return 1;  // 合法地址
     }
-    return 1;
+
+    printf("\033[31m address = %08x is out of bound of ysyxSoC map at pc = %08x \033[0m\n",
+           addr, npc_cpu.pc);
+    return 0;      // 非法/保留地址
 }
 
 extern "C" int pmem_read(vaddr_t raddr) {

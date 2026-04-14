@@ -82,7 +82,8 @@ module ysyx_24110005(
   import "DPI-C" function void function_trace(input int unsigned pc, input int unsigned inst, input int unsigned npc);
   import "DPI-C" function void difftest_step(input int unsigned pc, input int unsigned npc);
   import "DPI-C" function void device_update();
-
+  import "DPI-C" function void mtrace_read(input int unsigned addr, input int unsigned len);
+  import "DPI-C" function void mtrace_write(input int unsigned addr, input int unsigned len, input int unsigned data);
   // -------------------------------------------------------
   // 不用的 Slave 口：输出置 0（按要求）
   // -------------------------------------------------------
@@ -142,9 +143,8 @@ module ysyx_24110005(
       finish_sim();
     end else begin
       if (!reset) begin
-        //device_update();
         if (fetch_dec_valid) begin
-         //  inst_trace(pc, current_inst, dnpc);
+           inst_trace(pc, current_inst, dnpc);
            //function_trace(pc, current_inst, dnpc);
         end
         if ((exc_wb_ready && exc_wb_valid) || bresp) begin
@@ -154,6 +154,81 @@ module ysyx_24110005(
     end
   end
 
+  function automatic bit is_cacheable_addr(input [31:0] addr);
+    begin
+      is_cacheable_addr =
+          ((addr >= 32'h0f00_0000) && (addr <= 32'h0fff_ffff)) || // SRAM
+          ((addr >= 32'h8000_0000) && (addr <= 32'h9fff_ffff)) || // PSRAM
+          ((addr >= 32'ha000_0000) && (addr <= 32'hbfff_ffff));   // SDRAM
+    end
+endfunction
+
+function automatic [31:0] bytes_from_size(input [2:0] size);
+  begin
+    case (size)
+      3'b000: bytes_from_size = 32'd1;
+      3'b001: bytes_from_size = 32'd2;
+      3'b010: bytes_from_size = 32'd4;
+      default: bytes_from_size = 32'd4;
+    endcase
+  end
+endfunction
+
+function automatic [31:0] bytes_from_wstrb(input [3:0] strb);
+  begin
+    case (strb)
+      4'b0001, 4'b0010, 4'b0100, 4'b1000: bytes_from_wstrb = 32'd1;
+      4'b0011, 4'b1100, 4'b0110:         bytes_from_wstrb = 32'd2;
+      4'b1111:                            bytes_from_wstrb = 32'd4;
+      default:                            bytes_from_wstrb = 32'd4;
+    endcase
+  end
+endfunction
+
+reg [31:0] mtrace_awaddr_q;
+reg [2:0]  mtrace_awsize_q;
+reg        mtrace_aw_pending;
+
+always @(posedge clock or posedge reset) begin
+  if (reset) begin
+    mtrace_awaddr_q   <= 32'b0;
+    mtrace_awsize_q   <= 3'b010;
+    mtrace_aw_pending <= 1'b0;
+  end else begin
+    // -----------------------------
+    // Load: 读地址握手成功 -> 记录一次 mtrace_read
+    // 当前没有 dcache，LSU 读通常是单拍；先按 AR 握手记一条即可
+    // -----------------------------
+    if (lsu_arvalid && lsu_arready) begin
+      if (is_cacheable_addr(lsu_araddr) && (lsu_arlen == 8'd0)) begin
+        mtrace_read(lsu_araddr, bytes_from_size(lsu_arsize));
+      end
+    end
+
+    // -----------------------------
+    // Store: 先锁存 AW 地址，再在 W 握手成功时记录一次 mtrace_write
+    // 这样能把地址和写数据对应起来
+    // -----------------------------
+    if (lsu_awvalid && lsu_awready) begin
+      mtrace_awaddr_q   <= lsu_awaddr;
+      mtrace_awsize_q   <= lsu_awsize;
+      mtrace_aw_pending <= 1'b1;
+    end
+
+    if (lsu_wvalid && lsu_wready) begin
+      if (mtrace_aw_pending) begin
+        if (is_cacheable_addr(mtrace_awaddr_q) && lsu_wlast) begin
+          mtrace_write(
+            mtrace_awaddr_q,
+            bytes_from_wstrb(lsu_wstrb),
+            lsu_wdata
+          );
+        end
+        mtrace_aw_pending <= 1'b0;
+      end
+    end
+  end
+end
   // -------------------------------------------------------
   // IFU <-> Arbiter：完整 AXI4 (AR/R)
   // -------------------------------------------------------
@@ -171,6 +246,24 @@ module ysyx_24110005(
   wire [1:0]  ifu_rresp;
   wire        ifu_rlast;
   wire [3:0]  ifu_rid;
+
+
+  // -------------------------------------------------------
+  // ICache <-> Arbiter：给 ICache 用的访存通道
+  // -------------------------------------------------------
+  wire        ic_mem_arvalid;
+  wire        ic_mem_arready;
+  wire [31:0] ic_mem_araddr;
+  wire [7:0]  ic_mem_arlen;
+  wire [2:0]  ic_mem_arsize;
+  wire [1:0]  ic_mem_arburst;
+
+  wire        ic_mem_rready;
+  wire        ic_mem_rvalid;
+  wire [31:0] ic_mem_rdata;
+  wire [1:0]  ic_mem_rresp;
+  wire        ic_mem_rlast;
+  wire [3:0]  ic_mem_rid;
 
   ysyx_24110005_ifu #(
     .DATA_WIDTH(DATA_WIDTH),
@@ -200,6 +293,42 @@ module ysyx_24110005(
     .i_ifu_rlast       (ifu_rlast),
     .i_ifu_rid         (ifu_rid)
   );
+
+
+ysyx_24110005_icache #(
+  .ADDR_WIDTH(32),
+  .DATA_WIDTH(32),
+  .LINE_BYTES(8),
+  .SET_NUM(128)
+) u_icache (
+  .clock           (clock),
+  .rst_n           (~reset),
+  .flush_i         (fencei_flush),   // 新增
+
+  .cpu_ar_valid    (ifu_arvalid),
+  .cpu_ar_addr     (ifu_araddr),
+  .cpu_ar_ready    (ifu_arready),
+
+  .cpu_inst_rready (ifu_rready),
+  .cpu_inst_rvalid (ifu_rvalid),
+  .cpu_inst_rdata  (ifu_rdata),
+
+  .mem_ar_valid    (ic_mem_arvalid),
+  .mem_ar_addr     (ic_mem_araddr),
+  .mem_ar_len      (ic_mem_arlen),
+  .mem_ar_size     (ic_mem_arsize),
+  .mem_ar_burst    (ic_mem_arburst),
+  .mem_ar_ready    (ic_mem_arready),
+
+  .mem_rvalid      (ic_mem_rvalid),
+  .mem_rready      (ic_mem_rready),
+  .mem_rdata       (ic_mem_rdata),
+  .mem_rlast       (ic_mem_rlast)
+);
+  // ICache 这版没有 rresp/rlast/rid，给 IFU 常量即可
+  assign ifu_rresp = 2'b00;
+  assign ifu_rlast = ifu_rvalid;
+  assign ifu_rid   = 4'b0;
 
   // -------------------------------------------------------
   // LSU <-> Arbiter：完整 AXI4 (AR/R + AW/W/B)
@@ -362,21 +491,22 @@ module ysyx_24110005(
     .clock(clock),
     .reset(reset),
 
-    .ifu_arvalid (ifu_arvalid),
-    .ifu_arready (ifu_arready),
-    .ifu_araddr  (ifu_araddr),
-    .ifu_arid    (ifu_arid),
-    .ifu_arlen   (ifu_arlen),
-    .ifu_arsize  (ifu_arsize),
-    .ifu_arburst (ifu_arburst),
+      // ICache miss 访存通道接 Arbiter 的 IFU 读口
+    .ifu_arvalid (ic_mem_arvalid),
+    .ifu_arready (ic_mem_arready),
+    .ifu_araddr  (ic_mem_araddr),
+    .ifu_arid    (4'b0000),
+    .ifu_arlen   (ic_mem_arlen),
+    .ifu_arsize  (ic_mem_arsize),
+    .ifu_arburst (ic_mem_arburst),
 
-    .ifu_rready  (ifu_rready),
-    .ifu_rvalid  (ifu_rvalid),
-    .ifu_rdata   (ifu_rdata),
-    .ifu_rresp   (ifu_rresp),
-    .ifu_rlast   (ifu_rlast),
-    .ifu_rid     (ifu_rid),
-
+    .ifu_rready  (ic_mem_rready),
+    .ifu_rvalid  (ic_mem_rvalid),
+    .ifu_rdata   (ic_mem_rdata),
+    .ifu_rresp   (ic_mem_rresp),
+    .ifu_rlast   (ic_mem_rlast),
+    .ifu_rid     (ic_mem_rid),
+    
     .lsu_arvalid (lsu_arvalid),
     .lsu_arready (lsu_arready),
     .lsu_araddr  (lsu_araddr),
@@ -716,68 +846,73 @@ module ysyx_24110005(
   // -------------------------------------------------------
   // Decoder / ALU / RF（你原来逻辑，修语法即可）
   // -------------------------------------------------------
-  ysyx_24110005_Decoder #(
-    .DATA_WIDTH(DATA_WIDTH),
-    .OP_WIDTH(OP_WIDTH),
-    .REG_ADDR_WIDTH(REG_ADDR_WIDTH),
-    .FUN_WIDTH(FUN_WIDTH)
-  ) u_decoder (
-    .clock(clock),
-    .reset(reset),
-    .inst(current_inst),
+  wire dec_exc_fencei;
+  wire fencei_flush;
 
-    .fetch_dec_valid(fetch_dec_valid),
-    .fetch_dec_ready(fetch_dec_ready),
+ysyx_24110005_Decoder #(
+  .DATA_WIDTH(DATA_WIDTH),
+  .OP_WIDTH(OP_WIDTH),
+  .REG_ADDR_WIDTH(REG_ADDR_WIDTH),
+  .FUN_WIDTH(FUN_WIDTH)
+) u_decoder (
+  .clock(clock),
+  .reset(reset),
+  .inst(current_inst),
 
-    .r_addr1(raddr1),
-    .r_addr2(raddr2),
+  .fetch_dec_valid(fetch_dec_valid),
+  .fetch_dec_ready(fetch_dec_ready),
 
-    .dec_exc_waddr (waddr),
-    .dec_exc_opcode(opcode),
-    .dec_exc_imm   (imm),
-    .dec_exc_fun   (fun),
+  .r_addr1(raddr1),
+  .r_addr2(raddr2),
 
-    .mem_ar_valid  (lsu_dec_ar_valid),
-    .mem_ar_ready  (lsu_dec_ar_ready),
+  .dec_exc_waddr  (waddr),
+  .dec_exc_opcode (opcode),
+  .dec_exc_imm    (imm),
+  .dec_exc_fun    (fun),
+  .dec_exc_fencei (dec_exc_fencei),
 
-    .dec_exc_valid (dec_exc_valid),
-    .dec_exc_ready (dec_exc_ready)
-  );
+  .mem_ar_valid   (lsu_dec_ar_valid),
+  .mem_ar_ready   (lsu_dec_ar_ready),
 
-  ysyx_24110005_Alu #(
-    .DATA_WIDTH(DATA_WIDTH),
-    .REG_ADDR_WIDTH(REG_ADDR_WIDTH),
-    .FUN_WIDTH(FUN_WIDTH),
-    .OP_WIDTH(OP_WIDTH)
-  ) u_alu (
-    .clock(clock),
-    .reset(reset),
+  .dec_exc_valid  (dec_exc_valid),
+  .dec_exc_ready  (dec_exc_ready)
+);
+  
+ysyx_24110005_Alu #(
+  .DATA_WIDTH(DATA_WIDTH),
+  .REG_ADDR_WIDTH(REG_ADDR_WIDTH),
+  .FUN_WIDTH(FUN_WIDTH),
+  .OP_WIDTH(OP_WIDTH)
+) u_alu (
+  .clock(clock),
+  .reset(reset),
 
-    .dec_exc_valid(dec_exc_valid),
-    .dec_exc_ready(dec_exc_ready),
+  .dec_exc_valid(dec_exc_valid),
+  .dec_exc_ready(dec_exc_ready),
 
-    .w_addr(waddr),
-    .pc(pc),
-    .opcode(opcode),
-    .fun(fun),
-    .src1(src1),
-    .src2(src2),
-    .imm(imm),
+  .w_addr(waddr),
+  .pc(pc),
+  .opcode(opcode),
+  .fun(fun),
+  .src1(src1),
+  .src2(src2),
+  .imm(imm),
+  .i_fencei(dec_exc_fencei),
 
+  .dnpc(dnpc),
+  .w_data(w_data),
+  .wen(wen_ret_and_j),
+  .lsu_ex_r_valid(lsu_ex_r_valid),
+  .mem_rdata(lsu_ex_rdata),
+  .lsu_ex_w_valid(lsu_ex_w_valid),
+  .lsu_ex_w_ready(lsu_ex_w_ready),
 
-    .dnpc(dnpc),
-    .w_data(w_data),
-    .wen(wen_ret_and_j),
-    .lsu_ex_r_valid(lsu_ex_r_valid),
-    .mem_rdata(lsu_ex_rdata),
-    .lsu_ex_w_valid(lsu_ex_w_valid),
-    .lsu_ex_w_ready(lsu_ex_w_ready),
-
-    .bresp(bresp),
-    .exc_wb_ready(exc_wb_ready),
-    .exc_wb_valid(exc_wb_valid),
-    .w_finish_sim(w_finish_sim)
-  );
+  .bresp(bresp),
+  .exc_wb_ready(exc_wb_ready),
+  .exc_wb_valid(exc_wb_valid),
+  .w_finish_sim(w_finish_sim),
+  .o_fencei_flush(fencei_flush)
+);
 
   ysyx_24110005_RegisterFile #(
     .REG_ADDR_WIDTH(REG_ADDR_WIDTH),

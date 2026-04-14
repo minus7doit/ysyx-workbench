@@ -15,6 +15,7 @@ module ysyx_24110005_Decoder #(
     output [DATA_WIDTH-1:0]dec_exc_imm,
     output [FUN_WIDTH-1:0]dec_exc_fun,
     output [OP_WIDTH-1:0]dec_exc_opcode,
+    output                 dec_exc_fencei,
     output mem_ar_valid,
     input  mem_ar_ready,
 
@@ -33,23 +34,24 @@ parameter TYPE_S=7'b0100011;
 parameter TYPE_U0=7'b0110111;
 parameter TYPE_U1=7'b0010111;
 parameter TYPE_R=7'b0110011;
-
+parameter TYPE_FENCE_I = 7'b0001111;
 parameter STATE_ID=2'b01;
 parameter STATE_OUTPUT=2'b10;
 parameter STATE_LOAD_DATA=2'b11;
 
-//专门用来写寄存器的；和S型指令直接写进地址还不太一样
-//根据指令类型取出立即数
 reg [FUN_WIDTH-1: 0]r_fun;
 reg [OP_WIDTH-1:0]r_opcode;
 reg [REG_ADDR_WIDTH-1:0] r_waddr;
 reg [DATA_WIDTH-1:0]r_imm;
+reg r_fencei;
 
 wire [FUN_WIDTH-1: 0]fun;
 wire [OP_WIDTH-1:0]opcode;
 wire [REG_ADDR_WIDTH-1:0] w_addr;
 wire [DATA_WIDTH-1:0]imm;
 wire mem_load_en;
+wire is_fencei;
+
 reg [1:0] id_state;
 
 always @(posedge clock or posedge reset) begin
@@ -59,38 +61,39 @@ always @(posedge clock or posedge reset) begin
     else begin
         case (id_state)
             STATE_ID:begin
-            if(fetch_dec_valid&&fetch_dec_ready)begin
-                if (mem_load_en) begin
-                    id_state<=STATE_LOAD_DATA;
+                if(fetch_dec_valid&&fetch_dec_ready)begin
+                    if (mem_load_en) begin
+                        id_state<=STATE_LOAD_DATA;
+                    end
+                    else begin
+                        id_state<=STATE_OUTPUT;
+                    end
                 end
-                else begin
-                    id_state<=STATE_OUTPUT;
-                end
-            end
             end
             STATE_LOAD_DATA:begin
-            if(mem_ar_ready&&mem_ar_valid)
-                id_state<=STATE_OUTPUT;
+                if(mem_ar_ready&&mem_ar_valid)
+                    id_state<=STATE_OUTPUT;
             end
             STATE_OUTPUT:begin
-            if(dec_exc_ready&&dec_exc_valid)
-                id_state<=STATE_ID;
+                if(dec_exc_ready&&dec_exc_valid)
+                    id_state<=STATE_ID;
             end
             default: id_state<=STATE_ID;
         endcase
     end
 end
 
-
-
 assign fetch_dec_ready =(id_state==STATE_ID);
-assign dec_exc_valid  = (id_state==STATE_OUTPUT);
+assign dec_exc_valid   = (id_state==STATE_OUTPUT);
 
-assign opcode=inst[OP_WIDTH-1:0];
-assign fun=inst[14:12];//选择同一类型指令的其中一条指令
-assign r_addr1=inst[19:15];//寄存器地址1
-assign r_addr2=inst[24:20];//寄存器地址2
-assign w_addr= inst[11:7];//目标寄存器地址
+assign opcode = inst[OP_WIDTH-1:0];
+assign fun    = inst[14:12];
+assign r_addr1= inst[19:15];
+assign r_addr2= inst[24:20];
+assign w_addr = inst[11:7];
+
+// fence.i : opcode=0001111, funct3=001
+assign is_fencei = (opcode == TYPE_FENCE_I) && (fun == 3'b001);
 
 ysyx_24110005_MuxKeyWithDefault #(
     .NR_KEY(TYPE_NUM),
@@ -116,13 +119,8 @@ always @(posedge clock or posedge reset) begin
     if(reset)begin
         r_waddr<={REG_ADDR_WIDTH{1'b0}};
     end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            r_waddr<=w_addr;
-        end
-        else begin
-            r_waddr<=r_waddr;
-        end
+    else if(fetch_dec_valid&&fetch_dec_ready)begin
+        r_waddr<=w_addr;
     end
 end
 
@@ -130,13 +128,8 @@ always @(posedge clock or posedge reset) begin
     if(reset)begin
         r_imm<={DATA_WIDTH{1'b0}};
     end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            r_imm<=imm;
-        end
-        else begin
-            r_imm<=r_imm;
-        end
+    else if(fetch_dec_valid&&fetch_dec_ready)begin
+        r_imm<=imm;
     end
 end
 
@@ -144,13 +137,8 @@ always @(posedge clock or posedge reset) begin
     if(reset)begin     
         r_opcode<={OP_WIDTH{1'b0}};
     end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            r_opcode<=opcode;
-        end
-        else begin
-            r_opcode<=r_opcode;
-        end
+    else if(fetch_dec_valid&&fetch_dec_ready)begin
+        r_opcode<=opcode;
     end
 end
 
@@ -158,28 +146,27 @@ always @(posedge clock or posedge reset) begin
     if(reset)begin     
         r_fun<={FUN_WIDTH{1'b0}};
     end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            r_fun<=fun;
-        end
-        else begin
-            r_fun<=r_fun;
-        end
+    else if(fetch_dec_valid&&fetch_dec_ready)begin
+        r_fun<=fun;
     end
 end
 
-assign dec_exc_waddr=r_waddr;
-assign dec_exc_imm=r_imm;
-assign dec_exc_opcode=r_opcode;
-assign dec_exc_fun=r_fun;
+always @(posedge clock or posedge reset) begin
+    if(reset)begin
+        r_fencei <= 1'b0;
+    end
+    else if(fetch_dec_valid&&fetch_dec_ready)begin
+        r_fencei <= is_fencei;
+    end
+end
 
-assign mem_load_en=(opcode==TYPE_I0);
+assign dec_exc_waddr  = r_waddr;
+assign dec_exc_imm    = r_imm;
+assign dec_exc_opcode = r_opcode;
+assign dec_exc_fun    = r_fun;
+assign dec_exc_fencei = r_fencei;
+
+assign mem_load_en = (opcode==TYPE_I0);
 assign mem_ar_valid= (id_state==STATE_LOAD_DATA);
 
 endmodule
-
-
-// Author: minus7
-// Date: 2024-11-20
-// Version: 1.0
-// Filename: Inst_Decoder.v
