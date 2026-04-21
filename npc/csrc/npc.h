@@ -22,7 +22,7 @@
 #define MTRACE 0
 #define WAVE 0
 #define CONFIG_DEVICE 0
-#define CONFIG_NVBOARD 0
+#define CONFIG_NVBOARD 1
 #if CONFIG_NVBOARD
 #include <nvboard.h>
 #endif
@@ -36,7 +36,7 @@ extern void sdb_mainloop();
 extern void finish_sim();
 extern uint32_t* guest_to_host(uint32_t paddr);
 extern void inst_trace(uint32_t pc, uint32_t inst);
-extern void function_trace(uint32_t pc, uint32_t inst , uint32_t npc);
+extern "C" void function_trace(uint32_t pc, uint32_t inst , uint32_t npc);
 extern void exec_instructions(uint32_t pc, uint32_t inst, uint32_t npc);
 extern void init_elf(const char *elf_file);
 extern void init_difftest(char *ref_so_file, long img_size, int port);

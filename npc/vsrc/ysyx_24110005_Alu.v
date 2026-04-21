@@ -16,7 +16,8 @@ input [DATA_WIDTH-1:0] src2,
 input [DATA_WIDTH-1:0] imm ,
 input [OP_WIDTH-1:0]   opcode,
 input [FUN_WIDTH-1:0]  fun,
-input                  i_fencei,        // 新增
+input                  i_fencei,
+input                  i_dec_has_exc,
 
 output[DATA_WIDTH-1:0] dnpc,
 output[DATA_WIDTH-1:0] w_data,
@@ -29,7 +30,13 @@ input  bresp,
 output exc_wb_valid,
 input  exc_wb_ready,
 output w_finish_sim,
-output o_fencei_flush                // 新增
+output o_fencei_flush,
+input  i_trap_commit,
+input  [DATA_WIDTH-1:0] i_trap_mepc,
+input  [4:0]            i_trap_mcause,
+input  [DATA_WIDTH-1:0] i_trap_mtval,
+output [DATA_WIDTH-1:0] o_mtvec,
+output [DATA_WIDTH-1:0] o_mepc
 );
 
 reg [REG_ADDR_WIDTH-1:0] w_addr_ex;
@@ -41,6 +48,7 @@ reg [OP_WIDTH-1:0]   opcode_ex;
 reg [FUN_WIDTH-1:0]  fun_ex;
 reg [DATA_WIDTH-1:0] imm_ex;
 reg fencei_ex;
+reg exc_pending_ex;
 
 wire [DATA_WIDTH-1:0]snpc;
 //wire wen;
@@ -63,6 +71,7 @@ parameter CSR_MSTATUS = 12'h300;
 parameter CSR_MTVEC   = 12'h305;
 parameter CSR_MEPC    = 12'h341;
 parameter CSR_MCAUSE  = 12'h342;
+parameter CSR_MTVAL   = 12'h343;
 parameter CSR_ECALL   = 12'h0;
 parameter CSR_MRET    = 12'h302;
 parameter CSR_MVENDORID =12'hf11;
@@ -117,11 +126,13 @@ always @(posedge clock or posedge reset) begin
             end
             end
             STATE_EX: begin
-            if (opcode_ex == TYPE_S)
+            if (exc_pending_ex)
+                ex_state <= STATE_OUTPUT_WB;
+            else if (opcode_ex == TYPE_S)
                 ex_state <= STATE_STORE;
             else if (is_div_op)
                 ex_state <= STATE_MDU;
-            else if (opcode_ex == TYPE_I0)  
+            else if (opcode_ex == TYPE_I0)
                 if (lsu_ex_r_valid) begin
                     ex_state <= STATE_LOAD;
                 end
@@ -145,8 +156,7 @@ always @(posedge clock or posedge reset) begin
                 ex_state<=STATE_REC;
             end
             STATE_STORE:begin
-            if(lsu_ex_w_valid&&lsu_ex_w_ready)
-            //if(bresp)
+            if(bresp)
                 ex_state<=STATE_REC;
             end
             default: ex_state<=STATE_REC;
@@ -169,6 +179,7 @@ always @(posedge clock or posedge reset) begin
         w_addr_ex <= {REG_ADDR_WIDTH{1'b0}};
         pc_ex     <= {DATA_WIDTH{1'b0}};
         fencei_ex <= 1'b0;
+        exc_pending_ex <= 1'b0;
     end
     else if(dec_exc_ready&&dec_exc_valid) begin
         src1_ex   <= src1;
@@ -179,58 +190,40 @@ always @(posedge clock or posedge reset) begin
         w_addr_ex <= w_addr;
         pc_ex     <= pc;
         fencei_ex <= i_fencei;
+        exc_pending_ex <= i_dec_has_exc;
     end
 end
-
 reg [DATA_WIDTH-1:0] dnpc_reg;
-always@(posedge clock)begin
-    case(opcode_ex)
-    TYPE_J: begin
-        dnpc_reg<=pc_ex+imm_ex;   //j or jal 无条件跳转
-    end
-    TYPE_B:begin
-        case(fun_ex)
-            3'b000:begin //beq or beqz
-                 dnpc_reg<=(src1_ex == src2_ex)?(pc_ex+imm_ex):snpc;
-            end
-            3'b001:begin//bne or bnez
-                 dnpc_reg<=(src1_ex != src2_ex)?(pc_ex+imm_ex):snpc;
-            end
-            3'b100:begin//blt
-                 dnpc_reg<=($signed(src1_ex) < $signed(src2_ex))?(pc_ex+imm_ex):snpc;
-            end
-            3'b101:begin//bge 
-                 dnpc_reg<=($signed(src1_ex) >= $signed(src2_ex))?(pc_ex+imm_ex):snpc;
-            end
-            3'b110:begin//bltu
-                 dnpc_reg<=(src1_ex < src2_ex)?(pc_ex+imm_ex):snpc;
-            end
-            3'b111:begin
-                 dnpc_reg<=(src1_ex>=src2_ex)?(pc_ex+imm_ex):snpc;//bgeu
-            end
-            default:dnpc_reg<=snpc;
-        endcase 
-    end
-    TYPE_I2 :begin
-        if(w_addr_ex == 5'b0) begin
-            dnpc_reg<=src1_ex;
+always @(posedge clock) begin
+    case (opcode_ex)
+        TYPE_J: begin
+            dnpc_reg <= pc_ex + imm_ex;   // jal
         end
-        else begin
-            dnpc_reg<=(src1_ex+imm_ex)&(~32'b1);//jalr指令的下一条指令地址
+
+        TYPE_B: begin
+            case (fun_ex)
+                3'b000: dnpc_reg <= (src1_ex == src2_ex) ? (pc_ex + imm_ex) : snpc; // beq
+                3'b001: dnpc_reg <= (src1_ex != src2_ex) ? (pc_ex + imm_ex) : snpc; // bne
+                3'b100: dnpc_reg <= ($signed(src1_ex) <  $signed(src2_ex)) ? (pc_ex + imm_ex) : snpc; // blt
+                3'b101: dnpc_reg <= ($signed(src1_ex) >= $signed(src2_ex)) ? (pc_ex + imm_ex) : snpc; // bge
+                3'b110: dnpc_reg <= (src1_ex < src2_ex)  ? (pc_ex + imm_ex) : snpc; // bltu
+                3'b111: dnpc_reg <= (src1_ex >= src2_ex) ? (pc_ex + imm_ex) : snpc; // bgeu
+                default: dnpc_reg <= snpc;
+            endcase
         end
-    end
-    TYPE_CSR :begin
-        if((fun_ex==3'b0) && (imm_ex[11:0] == CSR_ECALL))begin
-            dnpc_reg<=m_tvec;
+
+        TYPE_I2: begin
+            // jalr: 无论 rd 是否为 0，都必须 (rs1 + imm) & ~1
+            dnpc_reg <= (src1_ex + imm_ex) & (~32'b1);
         end
-        else if((fun_ex==3'b0) && (imm_ex[11:0] == CSR_MRET))begin
-            dnpc_reg<=m_epc;
+
+        TYPE_CSR: begin
+            dnpc_reg <= snpc;
         end
-        else dnpc_reg<=snpc;
-    end
-    default: begin
-        dnpc_reg<=snpc; //默认情况下，下一条指令地址为当前指令地址+4
-    end
+
+        default: begin
+            dnpc_reg <= snpc;
+        end
     endcase
 end
 
@@ -249,10 +242,10 @@ wire [DATA_WIDTH-1:0] o_result;
 
 
 assign mdu_ready=(ex_state==STATE_MDU);
-assign is_div   = (opcode==TYPE_R) && (fun==3'b100) && (imm[6:0]==7'b0000001);
-assign is_divu  = (opcode==TYPE_R) && (fun==3'b101) && (imm[6:0]==7'b0000001);
-assign is_rem   = (opcode==TYPE_R) && (fun==3'b110) && (imm[6:0]==7'b0000001);
-assign is_remu  = (opcode==TYPE_R) && (fun==3'b111) && (imm[6:0]==7'b0000001);
+assign is_div   = (opcode_ex==TYPE_R) && (fun_ex==3'b100) && (imm_ex[6:0]==7'b0000001);
+assign is_divu  = (opcode_ex==TYPE_R) && (fun_ex==3'b101) && (imm_ex[6:0]==7'b0000001);
+assign is_rem   = (opcode_ex==TYPE_R) && (fun_ex==3'b110) && (imm_ex[6:0]==7'b0000001);
+assign is_remu  = (opcode_ex==TYPE_R) && (fun_ex==3'b111) && (imm_ex[6:0]==7'b0000001);
 
 assign is_div_op = is_div | is_divu | is_rem | is_remu;
 assign mdu_op =  is_div   ? 2'b00 :
@@ -457,13 +450,11 @@ reg [DATA_WIDTH-1:0] m_status;
 reg [DATA_WIDTH-1:0] m_cause;
 reg [DATA_WIDTH-1:0] m_tvec;
 reg [DATA_WIDTH-1:0] m_epc;
+reg [DATA_WIDTH-1:0] m_tval;
 
 //对同一个寄存器先读后写
 //只需要实例化用到的少数寄存器即可，而不是地址位宽个
 
-initial begin
-    m_status=32'h1800;
-end
 
 always@(*)begin
      case (imm_ex[11:0])
@@ -479,6 +470,9 @@ always@(*)begin
         CSR_MCAUSE:begin
             csr_data=m_cause;
         end
+        CSR_MTVAL:begin
+            csr_data=m_tval;
+        end
         CSR_MVENDORID:begin
             csr_data=MVENDORID;
         end
@@ -489,38 +483,41 @@ always@(*)begin
         endcase 
 end
 
-always @(posedge clock) begin
-    if(csr_wen)begin
-        case (imm_ex[11:0])
-            CSR_MSTATUS:begin
-                m_status<=src1_ex;        
-            end 
-            CSR_MTVEC:begin
-                m_tvec<=src1_ex;        
-            end
-            CSR_MEPC:begin
-                m_epc<=src1_ex;        
-            end
-            CSR_MCAUSE:begin
-                m_cause<=src1_ex;        
-            end
-            CSR_ECALL:begin
-                m_epc<=pc_ex;
-                m_cause<=YIELD;        
-            end
-            default:m_epc<=32'hffffffff;
-        endcase 
+always @(posedge clock or posedge reset) begin
+    if (reset) begin
+        m_status <= 32'h00001800;
+        m_cause  <= 32'b0;
+        m_tvec   <= 32'b0;
+        m_epc    <= 32'b0;
+        m_tval   <= 32'b0;
+    end else begin
+        if (i_trap_commit) begin
+            m_epc   <= i_trap_mepc;
+            m_cause <= {27'b0, i_trap_mcause};
+            m_tval  <= i_trap_mtval;
+        end else if (csr_wen) begin
+            case (imm_ex[11:0])
+                CSR_MSTATUS: m_status <= src1_ex;
+                CSR_MTVEC:   m_tvec   <= src1_ex;
+                CSR_MEPC:    m_epc    <= src1_ex;
+                CSR_MCAUSE:  m_cause  <= src1_ex;
+                CSR_MTVAL:   m_tval   <= src1_ex;
+                default: begin end
+            endcase
+        end
     end
 end
 
 
-    assign csr_wen=(ex_state==STATE_OUTPUT_WB)&&(opcode_ex==TYPE_CSR)&&((fun_ex==3'b001)|(fun_ex==3'b101)|((fun_ex==3'b000)&&(imm_ex[11:0]==CSR_ECALL))) ;
+    assign csr_wen=(ex_state==STATE_OUTPUT_WB)&&(opcode_ex==TYPE_CSR)&&((fun_ex==3'b001)||(fun_ex==3'b101)) ;
 
     assign mulh=signed_mulh(src1_ex,src2_ex);
     assign mul_unsigned=unsigned_mulh(src1_ex,src2_ex);
 
     assign lsu_ex_w_valid=(ex_state==STATE_STORE);
     assign o_fencei_flush = exc_wb_valid && exc_wb_ready && fencei_ex;
+    assign o_mtvec = m_tvec;
+    assign o_mepc  = m_epc;
     assign w_finish_sim = (opcode_ex == 7'b1110011)&&(imm_ex==1)&&(fun_ex==3'b000);
     assign snpc=pc_ex+4; //默认情况下，下一条指令地址为当前指令地址+4
     assign wen=((opcode_ex==TYPE_R) || (opcode_ex==TYPE_U0) || (opcode_ex==TYPE_U1) || (opcode_ex==TYPE_I0) || (opcode_ex==TYPE_I1) || ((opcode_ex==TYPE_I2)) || ((opcode_ex==TYPE_J)&& (w_addr_ex != 0))|| ((opcode_ex==TYPE_CSR)&& (w_addr_ex != 0))); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器

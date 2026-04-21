@@ -28,6 +28,18 @@ NPC_state npc_cpu = {};
 // [records]
 //   type(0=R,1=W), addr, len, data
 // ============================================================
+//
+// btrace 二进制格式
+// [header]
+//   magic        : 0x42545243  ('BTRC')
+//   version      : 1
+//   record_bytes : 16
+//   reserved     : 0
+//
+// [records]
+//   pc, inst, npc, flags
+//   flags bit0 = taken
+// ============================================================
 
 namespace {
 
@@ -38,6 +50,12 @@ constexpr size_t   ITRACE_BUF_LEN = 4096;
 constexpr uint32_t MTRACE_MAGIC   = 0x4d545243u;  // 'MTRC'
 constexpr uint32_t MTRACE_VERSION = 1u;
 constexpr size_t   MTRACE_BUF_LEN = 4096;
+
+constexpr uint32_t BTRACE_MAGIC   = 0x42545243u;  // 'BTRC'
+constexpr uint32_t BTRACE_VERSION = 1u;
+constexpr size_t   BTRACE_BUF_LEN = 4096;
+
+constexpr uint32_t OPC_BRANCH     = 0x63u;
 
 struct TraceHeader {
   uint32_t magic;
@@ -53,6 +71,13 @@ struct MTraceRecord {
   uint32_t data;   // read 时写 0；write 时记录写数据
 };
 
+struct BTraceRecord {
+  uint32_t pc;      // branch pc
+  uint32_t inst;    // branch inst
+  uint32_t npc;     // actual next pc
+  uint32_t flags;   // bit0 = taken
+};
+
 // ---------------- itrace ----------------
 static FILE *itrace_fp = nullptr;
 static uint32_t pc_buf[ITRACE_BUF_LEN];
@@ -65,6 +90,15 @@ static MTraceRecord mtrace_buf[MTRACE_BUF_LEN];
 static size_t mtrace_buf_cnt = 0;
 static bool mtrace_inited = false;
 
+// ---------------- btrace ----------------
+static FILE *btrace_fp = nullptr;
+static BTraceRecord btrace_buf[BTRACE_BUF_LEN];
+static size_t btrace_buf_cnt = 0;
+static bool btrace_inited = false;
+
+// ============================================================
+// flush helpers
+// ============================================================
 static void itrace_flush() {
   if (itrace_fp == nullptr || pc_buf_cnt == 0) return;
 
@@ -89,6 +123,21 @@ static void mtrace_flush() {
   mtrace_buf_cnt = 0;
 }
 
+static void btrace_flush() {
+  if (btrace_fp == nullptr || btrace_buf_cnt == 0) return;
+
+  size_t n = fwrite(btrace_buf, sizeof(BTraceRecord), btrace_buf_cnt, btrace_fp);
+  if (n != btrace_buf_cnt) {
+    fprintf(stderr, "[BTRACE] fwrite failed: expect=%zu, got=%zu\n", btrace_buf_cnt, n);
+    fflush(stderr);
+    std::abort();
+  }
+  btrace_buf_cnt = 0;
+}
+
+// ============================================================
+// close helper
+// ============================================================
 static void trace_close() {
   if (itrace_inited) {
     itrace_flush();
@@ -107,8 +156,20 @@ static void trace_close() {
     }
     mtrace_inited = false;
   }
+
+  if (btrace_inited) {
+    btrace_flush();
+    if (btrace_fp != nullptr) {
+      fclose(btrace_fp);
+      btrace_fp = nullptr;
+    }
+    btrace_inited = false;
+  }
 }
 
+// ============================================================
+// init helpers
+// ============================================================
 static void itrace_init() {
   if (itrace_inited) return;
 
@@ -122,7 +183,7 @@ static void itrace_init() {
   TraceHeader hdr;
   hdr.magic        = ITRACE_MAGIC;
   hdr.version      = ITRACE_VERSION;
-  hdr.record_bytes = 4;
+  hdr.record_bytes = sizeof(uint32_t);
   hdr.reserved     = 0;
 
   size_t n = fwrite(&hdr, sizeof(hdr), 1, itrace_fp);
@@ -161,6 +222,35 @@ static void mtrace_init() {
   mtrace_inited = true;
 }
 
+static void btrace_init() {
+  if (btrace_inited) return;
+
+  btrace_fp = fopen("btrace.bin", "wb");
+  if (btrace_fp == nullptr) {
+    fprintf(stderr, "[BTRACE] failed to open btrace.bin\n");
+    fflush(stderr);
+    std::abort();
+  }
+
+  TraceHeader hdr;
+  hdr.magic        = BTRACE_MAGIC;
+  hdr.version      = BTRACE_VERSION;
+  hdr.record_bytes = sizeof(BTraceRecord);
+  hdr.reserved     = 0;
+
+  size_t n = fwrite(&hdr, sizeof(hdr), 1, btrace_fp);
+  if (n != 1) {
+    fprintf(stderr, "[BTRACE] failed to write header\n");
+    fflush(stderr);
+    std::abort();
+  }
+
+  btrace_inited = true;
+}
+
+// ============================================================
+// common init
+// ============================================================
 static inline void trace_global_init() {
   static bool registered = false;
   if (!registered) {
@@ -169,6 +259,9 @@ static inline void trace_global_init() {
   }
 }
 
+// ============================================================
+// write helpers
+// ============================================================
 static inline void itrace_write_pc(uint32_t pc) {
   trace_global_init();
   if (!itrace_inited) itrace_init();
@@ -194,20 +287,39 @@ static inline void mtrace_write_record(uint32_t type, uint32_t addr, uint32_t le
   }
 }
 
+static inline void btrace_write_record(uint32_t pc, uint32_t inst, uint32_t npc, uint32_t taken) {
+  trace_global_init();
+  if (!btrace_inited) btrace_init();
+
+  btrace_buf[btrace_buf_cnt].pc    = pc;
+  btrace_buf[btrace_buf_cnt].inst  = inst;
+  btrace_buf[btrace_buf_cnt].npc   = npc;
+  btrace_buf[btrace_buf_cnt].flags = (taken & 1u);
+  btrace_buf_cnt++;
+
+  if (btrace_buf_cnt == BTRACE_BUF_LEN) {
+    btrace_flush();
+  }
+}
+
 } // namespace
 
 // ============================================================
-// itrace 接口
+// itrace / btrace 接口
 // ============================================================
 extern "C" void inst_trace(uint32_t pc, uint32_t inst, uint32_t npc) {
-  (void)inst;
-  (void)npc;
-
   npc_cpu.pc   = pc;
   npc_cpu.inst = inst;
   npc_cpu.npc  = npc;
 
+  // 原 itrace：只记录提交指令的 pc
   itrace_write_pc(pc);
+
+  // btrace：只记录条件分支
+  if ((inst & 0x7fU) == OPC_BRANCH) {
+    uint32_t taken = (npc != (pc + 4u)) ? 1u : 0u;
+    btrace_write_record(pc, inst, npc, taken);
+  }
 }
 
 extern "C" void function_trace(uint32_t pc, uint32_t inst, uint32_t npc) {

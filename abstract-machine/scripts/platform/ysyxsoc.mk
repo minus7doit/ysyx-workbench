@@ -28,6 +28,9 @@ else ifeq ($(NAME),rtthread)
 else ifeq ($(NAME),smc)
   LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_sdram_all.ld
   CFLAGS   += -Os
+else ifeq ($(NAME),fence_i)
+  LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_flash_exec_sdram_all.ld
+  CFLAGS   += -Os
 else ifeq ($(NAME),fsbl)
   LDSCRIPT = $(AM_HOME)/scripts/ysyxsoc_boot2.ld
   CFLAGS   += -Os
