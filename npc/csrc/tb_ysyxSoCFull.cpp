@@ -47,12 +47,12 @@ extern void init_elf(const char *elf_file);
  * 0: 关闭，不执行 init_flash_load()
  * ========================= */
 #ifndef BOOTLOADER_LOAD
-#define BOOTLOADER_LOAD 0
+#define BOOTLOADER_LOAD 1
 #endif
 
 /* payload 固定路径 */
 #ifndef PAYLOAD_BIN_PATH
-#define PAYLOAD_BIN_PATH "/home/minus7/Temp/rt-thread-am/bsp/abstract-machine/build/rtthread-riscv32e-ysyxsoc.bin"
+#define PAYLOAD_BIN_PATH "/home/minus7/ysyx-workbench/am-kernels/benchmarks/microbench/build/microbench-riscv32e-ysyxsoc.bin"
 #endif
 
 static inline uint32_t read_u32_le(const uint8_t *p) {

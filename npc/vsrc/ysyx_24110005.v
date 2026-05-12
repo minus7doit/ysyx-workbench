@@ -126,6 +126,8 @@ module ysyx_24110005(
   localparam CSR_ECALL          = 12'h000;
   localparam CSR_EBREAK         = 12'h001;
   localparam CSR_MRET           = 12'h302;
+wire debug_ifu_arready /*verilator public_flat_rd*/;
+assign debug_ifu_arready = ifu_arready;
 
   function automatic [31:0] decode_imm(input [31:0] inst);
     begin
@@ -420,8 +422,8 @@ module ysyx_24110005(
                               (alu_dnpc != (ex_pc + 32'd4));
 
   wire ctrl_redirect = normal_ctrl_redirect;
-  wire ctrl_flush    = ctrl_redirect;
-  wire global_flush  = trap_commit | mret_commit | ctrl_flush | fencei_flush;
+  wire ctrl_flush    = ctrl_redirect;//执行分支指令时，如果分支预测失败，需要刷新指令流水线
+  wire global_flush  = trap_commit | mret_commit | ctrl_flush | fencei_flush;//全局刷新信号，在发生异常、执行 mret 指令、分支预测失败或执行 fence.i 指令时触发
 
   wire ifu_fetch_allow = !reset && !global_flush && !(ex_valid && ex_serial);
 
@@ -448,15 +450,15 @@ module ysyx_24110005(
     if (reset) begin
       fetch_pc <= BASE_ADDR;
     end else if (trap_commit) begin
-      fetch_pc <= alu_mtvec;
+      fetch_pc <= alu_mtvec;//陷入异常时，直接跳转到 mtvec 指定的地址
     end else if (mret_commit) begin
-      fetch_pc <= alu_mepc;
+      fetch_pc <= alu_mepc;//执行 mret 指令时，直接跳转到 mepc 指定的地址
     end else if (ctrl_flush) begin
-      fetch_pc <= alu_dnpc;
+      fetch_pc <= alu_dnpc;//执行分支指令时，跳转到 ALU 计算的目标地址
     end else if (fencei_flush) begin
-      fetch_pc <= ex_pc + 32'd4;
+      fetch_pc <= ex_pc + 32'd4;//执行 fence.i 指令时，跳转到下一条指令地址
     end else if (ifu_take) begin
-      fetch_pc <= ifu_inst_pc + 32'd4;
+      fetch_pc <= ifu_inst_pc + 32'd4;//正常取指时，跳转到下一条指令地址
     end
   end
 
@@ -726,7 +728,7 @@ ysyx_24110005_lsu #(
   .o_lsu_arid         (lsu_arid),
   .o_lsu_arlen        (lsu_arlen),
   .o_lsu_arsize       (lsu_arsize),
-  .o_lsu_arburst      (lsu_arburst),
+  .o_lsu_arburst      (lsu_arburst),  
   .o_lsu_rready       (lsu_rready),
   .i_lsu_rvalid       (lsu_rvalid),
   .i_lsu_rdata        (lsu_rdata),

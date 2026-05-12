@@ -346,7 +346,7 @@ static inline uint32_t get_icache_hit_now() {
     return dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_icache__DOT__hit;
 }
 static inline uint32_t get_icache_req_inflight() {
-    return dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_icache__DOT__req_inflight;
+    return dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_icache__DOT__ic_access_busy;
 }
 
 static inline uint32_t get_lsu_load_pending() {
@@ -492,7 +492,7 @@ void perf_stat_update() {
     uint32_t ex_valid           = dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__ex_valid;
     uint32_t ex_serial          = dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__ex_serial;
     uint32_t ifu_arvalid        = dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__ifu_arvalid;
-    uint32_t ifu_arready        = dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__ifu_arready;
+    uint32_t ifu_arready        = dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__debug_ifu_arready;
     uint32_t ifu_buf_valid      = get_ifu_valid_buf();
 
     uint32_t id_is_load         = get_id_is_load();
