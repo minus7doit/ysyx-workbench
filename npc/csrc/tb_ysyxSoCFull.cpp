@@ -54,7 +54,7 @@ extern void init_elf(const char *elf_file);
 
 /* payload 固定路径 */
 #ifndef PAYLOAD_BIN_PATH
-#define PAYLOAD_BIN_PATH "/home/minus7/Temp/rt-thread-am/bsp/abstract-machine/build/rtthread-riscv32e-ysyxsoc.bin"
+#define PAYLOAD_BIN_PATH "/home/minus7/ysyx-workbench/am-kernels/benchmarks/microbench/build/microbench-riscv32e-ysyxsoc.bin"
 #endif
 
 static inline uint32_t read_u32_le(const uint8_t *p) {

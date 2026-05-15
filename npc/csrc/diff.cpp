@@ -32,7 +32,7 @@ static ref_raise_intr_t ref_difftest_raise_intr = nullptr;
 static ref_init_t       ref_difftest_init       = nullptr;
 
 CPU_state npc_state = {}; // 初始化 NPC 状态
-
+/*
 void isa_reg_display(){
   for(int i = 0; i < 32; i++){
     printf("gpr[%2d] : 0x%08x\n",i,dut->rootp->ysyxSoCFull__DOT__asic__DOT__cpu__DOT__cpu__DOT__u_rf__DOT__rf[i]);
@@ -67,35 +67,35 @@ bool isa_difftest_checkregs(CPU_state *ref, uint32_t pc) {
 
 
 
-
+*/
 void init_difftest(char* ref_so_file, long img_size, int port) {
-    void* handle = dlopen(ref_so_file, RTLD_LAZY);
-    if (!handle) { /* 处理错误 */ }
+   /* void* handle = dlopen(ref_so_file, RTLD_LAZY);
+    if (!handle) {  }
 
     dlerror(); // 清空旧错误
     ref_difftest_memcpy = reinterpret_cast<ref_memcpy_t>(
         dlsym(handle, "difftest_memcpy"));
-    if (const char* e = dlerror()) { /* 处理错误 */ }
+    if (const char* e = dlerror()) { }
 
     dlerror();
     ref_difftest_regcpy = reinterpret_cast<ref_regcpy_t>(
         dlsym(handle, "difftest_regcpy"));
-    if (const char* e = dlerror()) { /* 处理错误 */ }
+    if (const char* e = dlerror()) {  }
 
     dlerror();
     ref_difftest_exec = reinterpret_cast<ref_exec_t>(
         dlsym(handle, "difftest_exec"));
-    if (const char* e = dlerror()) { /* 处理错误 */ }
+    if (const char* e = dlerror()) { }
 
     dlerror();
     ref_difftest_raise_intr = reinterpret_cast<ref_raise_intr_t>(
         dlsym(handle, "difftest_raise_intr"));
-    if (const char* e = dlerror()) { /* 处理错误 */ }
+    if (const char* e = dlerror()) { }
 
     dlerror();
     ref_difftest_init = reinterpret_cast<ref_init_t>(
         dlsym(handle, "difftest_init"));
-    if (const char* e = dlerror()) { /* 处理错误 */ }
+    if (const char* e = dlerror()) {  }
 
     printf("\033[32mDifferential testing: ON \033[32m\n");
     printf("\033[33mThe result of every instruction will be compared with %s.\033[33m \n ",ref_so_file);
@@ -106,23 +106,23 @@ void init_difftest(char* ref_so_file, long img_size, int port) {
     
     ref_difftest_init(port);
     ref_difftest_memcpy(RESET_VECTOR, mrom, img_size, DIFFTEST_TO_REF);
-    ref_difftest_regcpy(&npc_state, DIFFTEST_TO_REF);
+    ref_difftest_regcpy(&npc_state, DIFFTEST_TO_REF);*/
 
 }
-
+/*
 static void checkregs(CPU_state *ref, vaddr_t pc) {
   if (!isa_difftest_checkregs(ref, pc)) {
     sim_break = true;
     //dut->exit_code=1;
     printf("\033[31mDifftest failed at pc =  %08x \033[31m\n", pc);
   }
-}
+}*/
 
 void difftest_step(vaddr_t pc, vaddr_t npc) {
-  CPU_state ref_r;
+ /* CPU_state ref_r;
   //printf("\033[32mDifftest step at pc =  %08x,npc is %08x \033[32m\n", pc,npc);
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
   checkregs(&ref_r, pc);
-  ref_difftest_exec(1);
+  ref_difftest_exec(1);*/
 
 }

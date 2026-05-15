@@ -1,526 +1,503 @@
 /* verilator lint_off UNUSEDSIGNAL */
+
 module ysyx_24110005_Alu #(
-    parameter DATA_WIDTH=32,
-    parameter OP_WIDTH=7,
-    parameter REG_ADDR_WIDTH=5,
-    parameter FUN_WIDTH=3
+    parameter DATA_WIDTH     = 32,
+    parameter OP_WIDTH       = 7,
+    parameter REG_ADDR_WIDTH = 5,
+    parameter FUN_WIDTH      = 3
 ) (
-input  clock,
-input  reset,
-input  dec_exc_valid,
-output dec_exc_ready,
-input [REG_ADDR_WIDTH-1:0]w_addr,
-input [DATA_WIDTH-1:0] pc,
-input [DATA_WIDTH-1:0] src1,
-input [DATA_WIDTH-1:0] src2,
-input [DATA_WIDTH-1:0] imm ,
-input [OP_WIDTH-1:0]   opcode,
-input [FUN_WIDTH-1:0]  fun,
+    input  wire                         clock,
+    input  wire                         reset,
 
+    // 这个端口五级流水 ALU 内部不再使用，
+    // rd/wen 应该由 Decoder 产生并通过流水线寄存器传递。
+    input  wire [REG_ADDR_WIDTH-1:0]    w_addr,
 
-output[DATA_WIDTH-1:0] dnpc,
-output[DATA_WIDTH-1:0] w_data,
-output wen,
-input  lsu_ex_r_valid,
-input [DATA_WIDTH-1:0]mem_rdata ,
-output lsu_ex_w_valid,
-input  lsu_ex_w_ready,
-input  bresp,
-output exc_wb_valid,
-input  exc_wb_ready,
-output w_finish_sim
+    input  wire [DATA_WIDTH-1:0]        pc,
+    input  wire [DATA_WIDTH-1:0]        src1,
+    input  wire [DATA_WIDTH-1:0]        src2,
+    input  wire [DATA_WIDTH-1:0]        imm,
+    input  wire [OP_WIDTH-1:0]          opcode,
+    input  wire [FUN_WIDTH-1:0]         fun,
+
+    // fence.i 建议由 Decoder 译码产生，并随 ID/EX 寄存器传入 EX 级
+    input  wire                         i_fencei,
+
+    // 如果当前指令在 ID 阶段已经发现异常，
+    // ALU 不应该再触发普通跳转/fence/finish。
+    input  wire                         i_dec_has_exc,
+
+    // EX 阶段计算出的下一 PC 候选值
+    output reg  [DATA_WIDTH-1:0]        dnpc,
+
+    // EX 阶段计算结果：
+    // ALU 指令：运算结果
+    // load/store：访存地址
+    // jal/jalr：pc + 4
+    // lui/auipc：对应结果
+    output reg  [DATA_WIDTH-1:0]        w_data,
+
+    // 分支/jal/jalr 是否真的需要重定向 PC
+    output reg                          o_redirect_valid,
+
+    // 仿真结束信号，建议顶层再用 ex_valid 或 wb_valid 进行门控
+    output wire                         w_finish_sim,
+
+    // fence.i flush 请求，建议顶层再用 ex_valid 进行门控
+    output wire                         o_fencei_flush
 );
 
-reg [REG_ADDR_WIDTH-1:0] w_addr_ex;
-reg [DATA_WIDTH-1:0] pc_ex;
+    // ============================================================
+    // opcode definition
+    // ============================================================
+    localparam TYPE_I0  = 7'b0000011;  // load
+    localparam TYPE_I1  = 7'b0010011;  // op-imm
+    localparam TYPE_I2  = 7'b1100111;  // jalr
+    localparam TYPE_CSR = 7'b1110011;  // system/csr
+    localparam TYPE_B   = 7'b1100011;  // branch
+    localparam TYPE_J   = 7'b1101111;  // jal
+    localparam TYPE_S   = 7'b0100011;  // store
+    localparam TYPE_U0  = 7'b0110111;  // lui
+    localparam TYPE_U1  = 7'b0010111;  // auipc
+    localparam TYPE_R   = 7'b0110011;  // register-register
 
-reg [DATA_WIDTH-1:0] src1_ex;
-reg [DATA_WIDTH-1:0] src2_ex;
-reg [OP_WIDTH-1:0]   opcode_ex;
-reg [FUN_WIDTH-1:0]  fun_ex;
-reg [DATA_WIDTH-1:0] imm_ex;
+    localparam FUNCT7_NORMAL = 7'b0000000;
+    localparam FUNCT7_SUBSRA = 7'b0100000;
+    localparam FUNCT7_MULDIV = 7'b0000001;
 
-wire [DATA_WIDTH-1:0]snpc;
-//wire wen;
-parameter  MVENDORID=32'h79737978 ;
-parameter  MARCHID=32'h016FE3B5 ;
+    wire [DATA_WIDTH-1:0] snpc;
+    assign snpc = pc + 32'd4;
 
-parameter TYPE_I0 =7'b0000011;
-parameter TYPE_I1 =7'b0010011;
-parameter TYPE_I2 =7'b1100111;
-parameter TYPE_CSR=7'b1110011;
-parameter TYPE_B  =7'b1100011;
-parameter TYPE_J  =7'b1101111;
-parameter TYPE_S  =7'b0100011;
-parameter TYPE_U0 =7'b0110111;
-parameter TYPE_U1 =7'b0010111;
-parameter TYPE_R  =7'b0110011;
+    // ============================================================
+    // multiply helper
+    // ============================================================
+    function [31:0] mul_low;
+        input [31:0] a;
+        input [31:0] b;
+        reg   [63:0] p;
+        begin
+            p = a * b;
+            mul_low = p[31:0];
+        end
+    endfunction
 
- 
-parameter CSR_MSTATUS = 12'h300;
-parameter CSR_MTVEC   = 12'h305;
-parameter CSR_MEPC    = 12'h341;
-parameter CSR_MCAUSE  = 12'h342;
-parameter CSR_ECALL   = 12'h0;
-parameter CSR_MRET    = 12'h302;
-parameter CSR_MVENDORID =12'hf11;
-parameter CSR_MARCHID   =12'hf12;
-parameter YIELD       = 11;
+    function [31:0] mulh_ss;
+        input [31:0] a;
+        input [31:0] b;
+        reg signed [63:0] p;
+        begin
+            p = $signed(a) * $signed(b);
+            mulh_ss = p[63:32];
+        end
+    endfunction
 
-parameter STATE_REC=3'b000;
-parameter STATE_EX=3'b001;
-parameter STATE_MDU=3'b010;
-parameter STATE_OUTPUT_WB=3'b011;
-parameter STATE_STORE=3'b100;
-parameter STATE_LOAD=3'b101;
+    function [31:0] mulh_uu;
+        input [31:0] a;
+        input [31:0] b;
+        reg [63:0] p;
+        begin
+            p = a * b;
+            mulh_uu = p[63:32];
+        end
+    endfunction
 
-function [DATA_WIDTH-1:0] signed_mulh ;
-    input [DATA_WIDTH-1:0]a;
-    input [DATA_WIDTH-1:0]b;
-    reg [2*DATA_WIDTH-1:0]mul_result;
-    begin 
-       mul_result={32'b1,a}*{32'b1,b};
-       signed_mulh=mul_result[2*DATA_WIDTH-1:DATA_WIDTH];
-    end
-endfunction
+    function [31:0] mulh_su;
+        input [31:0] a;
+        input [31:0] b;
+        reg signed [63:0]  a_ext;
+        reg signed [63:0]  b_ext;
+        reg signed [127:0] p;
+        begin
+            a_ext = {{32{a[31]}}, a};  // signed 32 -> signed 64
+            b_ext = {32'b0, b};        // unsigned 32 -> positive signed 64
+            p     = a_ext * b_ext;
+            mulh_su = p[63:32];
+        end
+    endfunction
 
-function [DATA_WIDTH-1:0] unsigned_mulh ;
-    input [DATA_WIDTH-1:0]a;
-    input [DATA_WIDTH-1:0]b;
-    reg [2*DATA_WIDTH-1:0]mul_result;
-    begin 
-       mul_result={32'b0,a}*{32'b0,b};
-       unsigned_mulh=mul_result[2*DATA_WIDTH-1:DATA_WIDTH];
-    end
-endfunction
-
-
-reg [2:0] ex_state;
-
-wire mdu_ready;
-wire mdu_valid;
-
-always @(posedge clock or posedge reset) begin
-    if(reset)begin
-        ex_state<=STATE_REC;
-    end
-    else begin
-        case (ex_state)
-            STATE_REC:begin
-            if(dec_exc_ready&&dec_exc_valid)begin
-                if(lsu_ex_r_valid)
-                    ex_state<=STATE_LOAD;
-                else
-                    ex_state<=STATE_EX;
+    // ============================================================
+    // RISC-V div/rem helper
+    //
+    // 注意：
+    //   这里先保留组合除法，方便功能先跑通。
+    //   后续如果时序不好，建议把 div/rem 单独拆成 MDU 多周期模块。
+    // ============================================================
+    function [31:0] rv_div;
+        input [31:0] a;
+        input [31:0] b;
+        begin
+            if (b == 32'b0) begin
+                rv_div = 32'hffff_ffff;
+            end else if ((a == 32'h8000_0000) && (b == 32'hffff_ffff)) begin
+                rv_div = 32'h8000_0000;
+            end else begin
+                rv_div = $signed(a) / $signed(b);
             end
-            end
-            STATE_EX: begin
-            if (opcode_ex == TYPE_S)
-                ex_state <= STATE_STORE;
-            else if (is_div_op)
-                ex_state <= STATE_MDU;
-            else if (opcode_ex == TYPE_I0)  
-                if (lsu_ex_r_valid) begin
-                    ex_state <= STATE_LOAD;
-                end
-                else begin
-                    ex_state <= STATE_EX;
-                end
-            else
-                ex_state <= STATE_OUTPUT_WB;
-            end
+        end
+    endfunction
 
-            STATE_LOAD: begin
-                    ex_state <= STATE_OUTPUT_WB;
+    function [31:0] rv_divu;
+        input [31:0] a;
+        input [31:0] b;
+        begin
+            if (b == 32'b0) begin
+                rv_divu = 32'hffff_ffff;
+            end else begin
+                rv_divu = a / b;
             end
-            STATE_MDU:begin
-                if(mdu_valid&&mdu_ready)begin
-                    ex_state<=STATE_OUTPUT_WB;
-                end
+        end
+    endfunction
+
+    function [31:0] rv_rem;
+        input [31:0] a;
+        input [31:0] b;
+        begin
+            if (b == 32'b0) begin
+                rv_rem = a;
+            end else if ((a == 32'h8000_0000) && (b == 32'hffff_ffff)) begin
+                rv_rem = 32'b0;
+            end else begin
+                rv_rem = $signed(a) % $signed(b);
             end
-            STATE_OUTPUT_WB:begin
-            if(exc_wb_ready&&exc_wb_valid)
-                ex_state<=STATE_REC;
+        end
+    endfunction
+
+    function [31:0] rv_remu;
+        input [31:0] a;
+        input [31:0] b;
+        begin
+            if (b == 32'b0) begin
+                rv_remu = a;
+            end else begin
+                rv_remu = a % b;
             end
-            STATE_STORE:begin
-            if(lsu_ex_w_valid&&lsu_ex_w_ready)
-            //if(bresp)
-                ex_state<=STATE_REC;
-            end
-            default: ex_state<=STATE_REC;
+        end
+    endfunction
+
+    // ============================================================
+    // branch condition
+    // ============================================================
+    reg branch_taken;
+
+    always @(*) begin
+        branch_taken = 1'b0;
+
+        case (fun)
+            3'b000: branch_taken = (src1 == src2);                         // beq
+            3'b001: branch_taken = (src1 != src2);                         // bne
+            3'b100: branch_taken = ($signed(src1) <  $signed(src2));        // blt
+            3'b101: branch_taken = ($signed(src1) >= $signed(src2));        // bge
+            3'b110: branch_taken = (src1 < src2);                          // bltu
+            3'b111: branch_taken = (src1 >= src2);                         // bgeu
+            default: branch_taken = 1'b0;
         endcase
     end
-end
 
+    // ============================================================
+    // dnpc + redirect_valid
+    //
+    // dnpc:
+    //   EX 阶段计算出的跳转目标或顺序 PC。
+    //
+    // o_redirect_valid:
+    //   1 表示当前 EX 指令需要让顶层 flush 并把 fetch_pc 改成 dnpc。
+    //
+    // 顶层建议：
+    //   ctrl_flush = ex_valid && alu_redirect_valid;
+    //   redirect_pc = alu_dnpc;
+    // ============================================================
+    always @(*) begin
+        dnpc             = snpc;
+        o_redirect_valid = 1'b0;
 
+        if (!i_dec_has_exc) begin
+            case (opcode)
+                TYPE_J: begin
+                    // jal 一定跳转
+                    dnpc             = pc + imm;
+                    o_redirect_valid = 1'b1;
+                end
 
-assign exc_wb_valid=(ex_state==STATE_OUTPUT_WB);
-assign dec_exc_ready=(ex_state==STATE_REC);
+                TYPE_I2: begin
+                    // jalr 一定跳转
+                    dnpc             = (src1 + imm) & 32'hffff_fffe;
+                    o_redirect_valid = 1'b1;
+                end
 
+                TYPE_B: begin
+                    dnpc             = branch_taken ? (pc + imm) : snpc;
+                    o_redirect_valid = branch_taken;
+                end
 
-
-
-always @(posedge clock) begin
-    if(dec_exc_ready&&dec_exc_valid)begin
-        src1_ex<=src1;
-        src2_ex<=src2;
-        imm_ex<=imm;
-        opcode_ex<=opcode;
-        fun_ex<=fun;
-        w_addr_ex<=w_addr;
-        pc_ex<=pc;
-    end
-end
-
-
-reg [DATA_WIDTH-1:0] dnpc_reg;
-always@(posedge clock)begin
-    case(opcode_ex)
-    TYPE_J: begin
-        dnpc_reg<=pc_ex+imm_ex;   //j or jal 无条件跳转
-    end
-    TYPE_B:begin
-        case(fun_ex)
-            3'b000:begin //beq or beqz
-                 dnpc_reg<=(src1_ex == src2_ex)?(pc_ex+imm_ex):snpc;
-            end
-            3'b001:begin//bne or bnez
-                 dnpc_reg<=(src1_ex != src2_ex)?(pc_ex+imm_ex):snpc;
-            end
-            3'b100:begin//blt
-                 dnpc_reg<=($signed(src1_ex) < $signed(src2_ex))?(pc_ex+imm_ex):snpc;
-            end
-            3'b101:begin//bge 
-                 dnpc_reg<=($signed(src1_ex) >= $signed(src2_ex))?(pc_ex+imm_ex):snpc;
-            end
-            3'b110:begin//bltu
-                 dnpc_reg<=(src1_ex < src2_ex)?(pc_ex+imm_ex):snpc;
-            end
-            3'b111:begin
-                 dnpc_reg<=(src1_ex>=src2_ex)?(pc_ex+imm_ex):snpc;//bgeu
-            end
-            default:dnpc_reg<=snpc;
-        endcase 
-    end
-    TYPE_I2 :begin
-        if(w_addr_ex == 5'b0) begin
-            dnpc_reg<=src1_ex;
-        end
-        else begin
-            dnpc_reg<=(src1_ex+imm_ex)&(~32'b1);//jalr指令的下一条指令地址
+                default: begin
+                    dnpc             = snpc;
+                    o_redirect_valid = 1'b0;
+                end
+            endcase
         end
     end
-    TYPE_CSR :begin
-        if((fun_ex==3'b0) && (imm_ex[11:0] == CSR_ECALL))begin
-            dnpc_reg<=m_tvec;
-        end
-        else if((fun_ex==3'b0) && (imm_ex[11:0] == CSR_MRET))begin
-            dnpc_reg<=m_epc;
-        end
-        else dnpc_reg<=snpc;
-    end
-    default: begin
-        dnpc_reg<=snpc; //默认情况下，下一条指令地址为当前指令地址+4
-    end
-    endcase
-end
 
-assign dnpc=dnpc_reg;
+    // ============================================================
+    // ALU result combinational logic
+    //
+    // 注意：
+    //   TYPE_I0(load)  : w_data = load 地址，不是 load 返回数据
+    //   TYPE_S (store) : w_data = store 地址
+    //
+    // 真正 load 写回数据应由 LSU/MEM 阶段产生：
+    //   lsu_load_data -> MEM/WB -> RF
+    // ============================================================
+    always @(*) begin
+        w_data = 32'h0000_0000;
 
-wire [DATA_WIDTH-1:0]mulh;
-wire [DATA_WIDTH-1:0]mul_unsigned;
+        case (opcode)
 
-wire is_div;
-wire is_divu;  
-wire is_rem;
-wire is_remu;
-wire [1:0]mdu_op;
-wire is_div_op ;
-wire [DATA_WIDTH-1:0] o_result;
-
-
-assign mdu_ready=(ex_state==STATE_MDU);
-assign is_div   = (opcode==TYPE_R) && (fun==3'b100) && (imm[6:0]==7'b0000001);
-assign is_divu  = (opcode==TYPE_R) && (fun==3'b101) && (imm[6:0]==7'b0000001);
-assign is_rem   = (opcode==TYPE_R) && (fun==3'b110) && (imm[6:0]==7'b0000001);
-assign is_remu  = (opcode==TYPE_R) && (fun==3'b111) && (imm[6:0]==7'b0000001);
-
-assign is_div_op = is_div | is_divu | is_rem | is_remu;
-assign mdu_op =  is_div   ? 2'b00 :
-                 is_divu  ? 2'b01 :
-                 is_rem   ? 2'b10 :
-                 is_remu  ? 2'b11 : 2'b00 ;
-
-ysyx_24110005_MDU #(
-    .DATA_WIDTH (DATA_WIDTH)
-) MDU_inst (
-    .clock          (clock),
-    .reset          (reset),
-    .i_devidend   (src1_ex),
-    .i_devisor    (src2_ex),
-    .i_mdu_op     (mdu_op),
-    .o_result     (o_result),
-    .i_mdu_ready  (mdu_ready),
-    .o_mdu_valid  (mdu_valid)
-);
-reg  [DATA_WIDTH-1:0] w_data_reg;
-always@(posedge clock)begin
-    if(is_div_op)begin
-        if(mdu_valid&&mdu_ready)begin
-            w_data_reg<=o_result; //div的结果写回   
-        end
-    end
-    else begin
-    case(opcode_ex) 
-    TYPE_I0:begin
-        case(fun_ex)
-            3'b000:begin//lb
-               w_data_reg<={{24{mem_rdata[7]}},mem_rdata[7:0]};
+            // ====================================================
+            // LOAD: EX 阶段只计算地址
+            // ====================================================
+            TYPE_I0: begin
+                w_data = src1 + imm;
             end
-            3'b001:begin//lh
-                w_data_reg<={{16{mem_rdata[15]}},mem_rdata[15:0]};
+
+            // ====================================================
+            // OP-IMM
+            // ====================================================
+            TYPE_I1: begin
+                case (fun)
+                    3'b000: begin
+                        // addi
+                        w_data = src1 + imm;
+                    end
+
+                    3'b001: begin
+                        // slli
+                        w_data = src1 << imm[4:0];
+                    end
+
+                    3'b010: begin
+                        // slti
+                        w_data = ($signed(src1) < $signed(imm)) ? 32'd1 : 32'd0;
+                    end
+
+                    3'b011: begin
+                        // sltiu
+                        w_data = (src1 < imm) ? 32'd1 : 32'd0;
+                    end
+
+                    3'b100: begin
+                        // xori
+                        w_data = src1 ^ imm;
+                    end
+
+                    3'b101: begin
+                        if (imm[11:5] == FUNCT7_SUBSRA) begin
+                            // srai
+                            w_data = $signed(src1) >>> imm[4:0];
+                        end else begin
+                            // srli
+                            w_data = src1 >> imm[4:0];
+                        end
+                    end
+
+                    3'b110: begin
+                        // ori
+                        w_data = src1 | imm;
+                    end
+
+                    3'b111: begin
+                        // andi
+                        w_data = src1 & imm;
+                    end
+
+                    default: begin
+                        w_data = 32'hffff_ffff;
+                    end
+                endcase
             end
-            3'b010:begin//lw
-                w_data_reg<=mem_rdata;
+
+            // ====================================================
+            // JALR: 写回 pc + 4
+            // ====================================================
+            TYPE_I2: begin
+                w_data = snpc;
             end
-            3'b100:begin//lbu
-                w_data_reg<={24'b0,mem_rdata[7:0]};
+
+            // ====================================================
+            // CSR:
+            // CSR 不建议继续在 ALU 内部处理。
+            // 如果后续支持 CSR，WB 数据应来自 CSR 模块的 csr_rdata。
+            // ====================================================
+            TYPE_CSR: begin
+                w_data = 32'b0;
             end
-            3'b101:begin//lhu
-                w_data_reg<={16'b0,mem_rdata[15:0]};
+
+            // ====================================================
+            // JAL: 写回 pc + 4
+            // ====================================================
+            TYPE_J: begin
+                w_data = snpc;
             end
-            default:w_data_reg<=32'hffffffff;  
+
+            // ====================================================
+            // STORE: EX 阶段只计算地址
+            // store data 是 src2，应通过 EX/MEM 的 mem_store_data 传给 LSU。
+            // ====================================================
+            TYPE_S: begin
+                w_data = src1 + imm;
+            end
+
+            // ====================================================
+            // LUI
+            // ====================================================
+            TYPE_U0: begin
+                w_data = imm;
+            end
+
+            // ====================================================
+            // AUIPC
+            // ====================================================
+            TYPE_U1: begin
+                w_data = pc + imm;
+            end
+
+            // ====================================================
+            // OP
+            // ====================================================
+            TYPE_R: begin
+                case (fun)
+
+                    3'b000: begin
+                        if (imm[6:0] == FUNCT7_NORMAL) begin
+                            // add
+                            w_data = src1 + src2;
+                        end else if (imm[6:0] == FUNCT7_SUBSRA) begin
+                            // sub
+                            w_data = src1 - src2;
+                        end else if (imm[6:0] == FUNCT7_MULDIV) begin
+                            // mul
+                            w_data = mul_low(src1, src2);
+                        end else begin
+                            w_data = 32'hffff_ffff;
+                        end
+                    end
+
+                    3'b001: begin
+                        if (imm[6:0] == FUNCT7_NORMAL) begin
+                            // sll
+                            w_data = src1 << src2[4:0];
+                        end else if (imm[6:0] == FUNCT7_MULDIV) begin
+                            // mulh
+                            w_data = mulh_ss(src1, src2);
+                        end else begin
+                            w_data = 32'hffff_ffff;
+                        end
+                    end
+
+                    3'b010: begin
+                        if (imm[6:0] == FUNCT7_NORMAL) begin
+                            // slt
+                            w_data = ($signed(src1) < $signed(src2)) ? 32'd1 : 32'd0;
+                        end else if (imm[6:0] == FUNCT7_MULDIV) begin
+                            // mulhsu
+                            w_data = mulh_su(src1, src2);
+                        end else begin
+                            w_data = 32'hffff_ffff;
+                        end
+                    end
+
+                    3'b011: begin
+                        if (imm[6:0] == FUNCT7_NORMAL) begin
+                            // sltu
+                            w_data = (src1 < src2) ? 32'd1 : 32'd0;
+                        end else if (imm[6:0] == FUNCT7_MULDIV) begin
+                            // mulhu
+                            w_data = mulh_uu(src1, src2);
+                        end else begin
+                            w_data = 32'hffff_ffff;
+                        end
+                    end
+
+                    3'b100: begin
+                        if (imm[6:0] == FUNCT7_NORMAL) begin
+                            // xor
+                            w_data = src1 ^ src2;
+                        end else if (imm[6:0] == FUNCT7_MULDIV) begin
+                            // div
+                            w_data = rv_div(src1, src2);
+                        end else begin
+                            w_data = 32'hffff_ffff;
+                        end
+                    end
+
+                    3'b101: begin
+                        if (imm[6:0] == FUNCT7_NORMAL) begin
+                            // srl
+                            w_data = src1 >> src2[4:0];
+                        end else if (imm[6:0] == FUNCT7_SUBSRA) begin
+                            // sra
+                            w_data = $signed(src1) >>> src2[4:0];
+                        end else if (imm[6:0] == FUNCT7_MULDIV) begin
+                            // divu
+                            w_data = rv_divu(src1, src2);
+                        end else begin
+                            w_data = 32'hffff_ffff;
+                        end
+                    end
+
+                    3'b110: begin
+                        if (imm[6:0] == FUNCT7_NORMAL) begin
+                            // or
+                            w_data = src1 | src2;
+                        end else if (imm[6:0] == FUNCT7_MULDIV) begin
+                            // rem
+                            w_data = rv_rem(src1, src2);
+                        end else begin
+                            w_data = 32'hffff_ffff;
+                        end
+                    end
+
+                    3'b111: begin
+                        if (imm[6:0] == FUNCT7_NORMAL) begin
+                            // and
+                            w_data = src1 & src2;
+                        end else if (imm[6:0] == FUNCT7_MULDIV) begin
+                            // remu
+                            w_data = rv_remu(src1, src2);
+                        end else begin
+                            w_data = 32'hffff_ffff;
+                        end
+                    end
+
+                    default: begin
+                        w_data = 32'hffff_ffff;
+                    end
+                endcase
+            end
+
+            default: begin
+                w_data = 32'hffff_ffff;
+            end
         endcase
     end
-    TYPE_I1:begin
-        case(fun_ex)
-            3'b000:begin 
-                w_data_reg<=src1_ex+imm_ex;////addi,地址不能看成负数处理
-            end
-            3'b001:begin
-                w_data_reg<=src1_ex<<imm_ex;//slli
-            end
-            3'b011:begin
-                w_data_reg<=(src1_ex == 0)?32'b1:32'b0;//seqz
-            end
-            3'b100:begin
-                w_data_reg<=src1_ex^imm_ex;//xori
-            end
-            3'b101:begin
-            if(imm_ex[11:5]== 7'b0100000)begin
-                w_data_reg<=$signed(src1_ex)>>>imm_ex[5:0];//srai
-                end
-            else begin
-                w_data_reg<=src1_ex>>imm_ex[5:0];//srli
-                end
-            end
-            3'b010:begin
-                w_data_reg<=($signed(src1_ex)<$signed(imm_ex))?32'b1:32'b0;//slti
-            end
-            3'b110:begin//ori
-                w_data_reg<=src1_ex|imm_ex;
-            end
-            3'b111:begin
-                w_data_reg<=src1_ex&imm_ex;////andi,地址不能看成负数处理
-            end
-            default:w_data_reg<=32'hffffffff;  
-        endcase 
-    end     
-    TYPE_I2:begin  
-            w_data_reg<=pc_ex+4;//jalr
-    end 
-    TYPE_CSR:begin
-            w_data_reg<=csr_data;//csrr,csrrw,csrrwi
-    end                 
-    TYPE_J:begin
-            w_data_reg<=pc_ex+4;//jal
-    end
-    TYPE_U1:begin
-            w_data_reg<=pc_ex+imm_ex;//auipc  
-    end
-    TYPE_U0:begin
-            w_data_reg<=imm_ex;  //lui
-    end
-    TYPE_R:begin
-        case(fun_ex)
-            3'b000:begin
-                if(imm_ex[6:0]==7'b0000000) begin
-                    w_data_reg<=src1_ex+src2_ex;//add
-                end
-                else if(imm_ex[6:0]==7'b0000001) begin
-                    w_data_reg<=$signed(src1_ex)*$signed(src2_ex);//CBD
-                end
-                else if(imm_ex[6:0]==7'b0100000)begin
-                    w_data_reg<=src1_ex-src2_ex;//sub or neg
-                end
-                else begin
-                    w_data_reg<=32'hffffffff;  
-                end
-            end
-            3'b001:begin
-                if(imm_ex[6:0]==7'b0000000) begin
-                    w_data_reg<=src1_ex << src2_ex[4:0];//sll
-                end
-                else if(imm_ex[6:0]==7'b0000001) begin
-                    w_data_reg<=mulh;//mulh
-                end
-                else begin
-                    w_data_reg<=32'hffffffff;  
-                end
-            end
-            3'b010:begin
-                w_data_reg<=($signed(src1_ex)<$signed(src2_ex))?32'b1:32'b0;//slt
-            end
-            3'b011:begin
-                if(imm_ex[6:0]==7'b0000000)begin
-                w_data_reg<=(src1_ex<src2_ex)?32'b1:32'b0;//sltu
-                end
-                else if(imm_ex[6:0]==7'b0000001)begin
-                w_data_reg<=mul_unsigned;           //mulhu
-                end
-                else begin
-                  w_data_reg<=32'hffffffff;  
-                end
-            end
-            3'b100:begin
-                if(imm_ex[6:0]==7'b0000000) begin
-                    w_data_reg<=src1_ex^src2_ex;//xor
-                end
-                else if(imm_ex[6:0]==7'b0000001) begin
-                    w_data_reg<=$signed(src1_ex)/$signed(src2_ex);//div
-                end
-                else begin
-                    w_data_reg<=32'hffffffff;  
-                end
-            end
-            3'b101:begin
-                if(imm_ex[6:0]==7'b0000000) begin
-                    w_data_reg<=src1_ex >> src2_ex[4:0];//srl
-                end
-                else if(imm_ex[6:0]==7'b0100000) begin
-                   w_data_reg<=($signed(src1_ex)>>>(src2_ex[4:0]));//sra
-                end
-                else if(imm_ex[6:0]==7'b0000001) begin
-                    w_data_reg<=src1_ex/src2_ex;//divu
-                end
-                else begin
-                    w_data_reg<=32'hffffffff;  
-                end
-            end
-            3'b110:begin
-                if(imm_ex[6:0]==7'b0000000) begin
-                    w_data_reg<=src1_ex|src2_ex;//or
-                end
-                else if(imm_ex[6:0]==7'b0000001) begin
-                    w_data_reg<=$signed(src1_ex)%$signed(src2_ex);//remu
-                end
-                else begin
-                    w_data_reg<=32'hffffffff;  
-                end
-            end
-            3'b111:begin
-                if(imm_ex[6:0]==7'b0000000) begin
-                    w_data_reg<=src1_ex&src2_ex;//and
-                end
-                else if(imm_ex[6:0]==7'b0000001) begin
-                    w_data_reg<=src1_ex%src2_ex;//remu
-                end
-                else begin
-                    w_data_reg<=32'hffffffff;  
-                end
-            end
-            default:w_data_reg<=32'hffffffff;  
-        endcase
-    end
-    default:w_data_reg<=32'hffffffff;  
-    endcase
-    end
-end
-assign w_data=w_data_reg;
 
-reg [DATA_WIDTH-1:0] csr_data;
-wire csr_wen;
-//YSYX 的ASCII码 ，和我的学号
-//reg [DATA_WIDTH-1:0] mvendorid;
-//reg [DATA_WIDTH-1:0] marchid;
+    // ============================================================
+    // fence.i
+    assign o_fencei_flush = (!i_dec_has_exc) && i_fencei;
 
-reg [DATA_WIDTH-1:0] m_status;
-reg [DATA_WIDTH-1:0] m_cause;
-reg [DATA_WIDTH-1:0] m_tvec;
-reg [DATA_WIDTH-1:0] m_epc;
-
-//对同一个寄存器先读后写
-//只需要实例化用到的少数寄存器即可，而不是地址位宽个
-
-initial begin
-    m_status=32'h1800;
-end
-
-always@(*)begin
-     case (imm_ex[11:0])
-        CSR_MSTATUS:begin
-            csr_data=m_status;        
-        end 
-        CSR_MTVEC:begin
-            csr_data=m_tvec;  
-        end
-        CSR_MEPC:begin
-            csr_data=m_epc;  
-        end
-        CSR_MCAUSE:begin
-            csr_data=m_cause;
-        end
-        CSR_MVENDORID:begin
-            csr_data=MVENDORID;
-        end
-        CSR_MARCHID:begin
-            csr_data=MARCHID;
-        end
-        default:csr_data=32'hffffffff;
-        endcase 
-end
-
-always @(posedge clock) begin
-    if(csr_wen)begin
-        case (imm_ex[11:0])
-            CSR_MSTATUS:begin
-                m_status<=src1_ex;        
-            end 
-            CSR_MTVEC:begin
-                m_tvec<=src1_ex;        
-            end
-            CSR_MEPC:begin
-                m_epc<=src1_ex;        
-            end
-            CSR_MCAUSE:begin
-                m_cause<=src1_ex;        
-            end
-            CSR_ECALL:begin
-                m_epc<=pc_ex;
-                m_cause<=YIELD;        
-            end
-            default:m_epc<=32'hffffffff;
-        endcase 
-    end
-end
-
-
-    assign csr_wen=(ex_state==STATE_OUTPUT_WB)&&(opcode_ex==TYPE_CSR)&&((fun_ex==3'b001)|(fun_ex==3'b101)|((fun_ex==3'b000)&&(imm_ex[11:0]==CSR_ECALL))) ;
-
-    assign mulh=signed_mulh(src1_ex,src2_ex);
-    assign mul_unsigned=unsigned_mulh(src1_ex,src2_ex);
-
-    assign lsu_ex_w_valid=(ex_state==STATE_STORE);
-
-    assign w_finish_sim = (opcode_ex == 7'b1110011)&&(imm_ex==1)&&(fun_ex==3'b000);
-    assign snpc=pc_ex+4; //默认情况下，下一条指令地址为当前指令地址+4
-    assign wen=((opcode_ex==TYPE_R) || (opcode_ex==TYPE_U0) || (opcode_ex==TYPE_U1) || (opcode_ex==TYPE_I0) || (opcode_ex==TYPE_I1) || ((opcode_ex==TYPE_I2)) || ((opcode_ex==TYPE_J)&& (w_addr_ex != 0))|| ((opcode_ex==TYPE_CSR)&& (w_addr_ex != 0))); //只有R型、U型、I型指令才会写寄存器，且除jalr外的指令才会写寄存器
+    // ============================================================
+    // ebreak / nemu trap simulation finish
+    //
+    // 顶层建议：
+    //   finish_sim = wb_valid && wb_finish_sim;
+    // 或者至少：
+    //   finish_sim = ex_valid && alu_finish_sim;
+    // ============================================================
+    assign w_finish_sim =
+        (!i_dec_has_exc) &&
+        (opcode == TYPE_CSR) &&
+        (imm == 32'd1) &&
+        (fun == 3'b000);
 
 endmodule
 
-
-
-
-
-
-
+/* verilator lint_on UNUSEDSIGNAL */

@@ -6,7 +6,7 @@ module ysyx_24110005_Arbiter #(
     input  reset,
 
     // =========================================================
-    // IFU side (AXI4-lite like) -> 改成 AXI4 AR/R 完整字段
+    // IFU side
     // =========================================================
     input                   ifu_arvalid,
     output                  ifu_arready,
@@ -24,7 +24,7 @@ module ysyx_24110005_Arbiter #(
     output [3:0]            ifu_rid,
 
     // =========================================================
-    // LSU side -> 改成 AXI4 AR/R + AW/W/B 完整字段
+    // LSU read side
     // =========================================================
     input                   lsu_arvalid,
     output                  lsu_arready,
@@ -41,6 +41,9 @@ module ysyx_24110005_Arbiter #(
     output                  lsu_rlast,
     output [3:0]            lsu_rid,
 
+    // =========================================================
+    // LSU write side
+    // =========================================================
     input                   lsu_awvalid,
     output                  lsu_awready,
     input  [ADDR_WIDTH-1:0] lsu_awaddr,
@@ -61,7 +64,7 @@ module ysyx_24110005_Arbiter #(
     output [3:0]            lsu_bid,
 
     // =========================================================
-    // Master side to XBAR (完整 AXI4)
+    // Master side to XBAR
     // =========================================================
     output                  m_arvalid,
     input                   m_arready,
@@ -96,128 +99,235 @@ module ysyx_24110005_Arbiter #(
     input                   m_bvalid,
     input  [1:0]            m_bresp,
     input  [3:0]            m_bid
-
-    // 你原来的“完成信号”（如果顶层还在用 bresp 推进 pc）
-  //  output                  o_bresp_done
 );
 
-    localparam IDLE = 2'b00;
-    localparam S_IFU = 2'b01;
-    localparam S_LSU_R = 2'b10;
-    localparam S_LSU_W = 2'b11;
+    // =========================================================
+    // State definition
+    // =========================================================
+    localparam S_IDLE    = 3'd0;
+    localparam S_IFU_AR  = 3'd1;
+    localparam S_IFU_R   = 3'd2;
+    localparam S_LSU_AR  = 3'd3;
+    localparam S_LSU_R   = 3'd4;
+    localparam S_LSU_W   = 3'd5;
+    localparam S_LSU_B   = 3'd6;
 
-    reg [1:0] state;
+    reg [2:0] state;
+    reg [2:0] state_next;
 
-    // -----------------------------
-    // AXI 握手事件
-    // -----------------------------
-    wire ifu_ar_fire = ifu_arvalid && ifu_arready;
-    wire lsu_ar_fire = lsu_arvalid && lsu_arready;
+    // AW/W independent handshake record
+    reg aw_done_r;
+    reg w_done_r;
 
-    wire lsu_aw_fire = lsu_awvalid && lsu_awready;
-    wire lsu_w_fire  = lsu_wvalid  && lsu_wready;
-    wire lsu_b_fire  = lsu_bvalid  && lsu_bready;
+    // =========================================================
+    // Handshake
+    // =========================================================
+    wire m_ar_fire;
+    wire m_r_fire;
+    wire m_aw_fire;
+    wire m_w_fire;
+    wire m_b_fire;
 
-    wire m_ar_fire   = m_arvalid && m_arready;
-    wire m_r_fire    = m_rvalid  && m_rready && m_rlast;
-    wire m_aw_fire   = m_awvalid && m_awready;
-    wire m_w_fire    = m_wvalid  && m_wready && m_wlast;
-    wire m_b_fire    = m_bvalid  && m_bready;
+    assign m_ar_fire = m_arvalid && m_arready;
+    assign m_r_fire  = m_rvalid  && m_rready && m_rlast;
+    assign m_aw_fire = m_awvalid && m_awready;
+    assign m_w_fire  = m_wvalid  && m_wready && m_wlast;
+    assign m_b_fire  = m_bvalid  && m_bready;
 
-    // -----------------------------
-    // 仲裁状态机：IFU 优先；LSU 分读/写
-    // -----------------------------
+    wire aw_done_next;
+    wire w_done_next;
+
+    assign aw_done_next = aw_done_r || m_aw_fire;
+    assign w_done_next  = w_done_r  || m_w_fire;
+
+    // =========================================================
+    // Next state
+    //
+    // 注意：
+    //   一旦进入 S_IFU_R / S_LSU_R / S_LSU_B，
+    //   必须等对应返回完成，不能被其他请求抢占。
+    // =========================================================
+    always @(*) begin
+        state_next = state;
+
+        case (state)
+            S_IDLE: begin
+                // 这里建议 LSU 优先，防止 load/store 被 IFU 长期饿死。
+                // 如果你确定 MEM stall 时 IFU 不会请求，也可以改回 IFU 优先。
+                if (lsu_awvalid || lsu_wvalid) begin
+                    state_next = S_LSU_W;
+                end else if (lsu_arvalid) begin
+                    state_next = S_LSU_AR;
+                end else if (ifu_arvalid) begin
+                    state_next = S_IFU_AR;
+                end else begin
+                    state_next = S_IDLE;
+                end
+            end
+
+            S_IFU_AR: begin
+                if (m_ar_fire) begin
+                    state_next = S_IFU_R;
+                end else if (!ifu_arvalid) begin
+                    // 防止 IFU flush 后撤销 ARVALID，Arbiter 卡死
+                    state_next = S_IDLE;
+                end else begin
+                    state_next = S_IFU_AR;
+                end
+            end
+
+            S_IFU_R: begin
+                if (m_r_fire) begin
+                    state_next = S_IDLE;
+                end else begin
+                    state_next = S_IFU_R;
+                end
+            end
+
+            S_LSU_AR: begin
+                if (m_ar_fire) begin
+                    state_next = S_LSU_R;
+                end else if (!lsu_arvalid) begin
+                    state_next = S_IDLE;
+                end else begin
+                    state_next = S_LSU_AR;
+                end
+            end
+
+            S_LSU_R: begin
+                if (m_r_fire) begin
+                    state_next = S_IDLE;
+                end else begin
+                    state_next = S_LSU_R;
+                end
+            end
+
+            S_LSU_W: begin
+                if (aw_done_next && w_done_next) begin
+                    state_next = S_LSU_B;
+                end else if (!lsu_awvalid && !lsu_wvalid && !aw_done_r && !w_done_r) begin
+                    // 防止上游撤销写请求导致卡死
+                    state_next = S_IDLE;
+                end else begin
+                    state_next = S_LSU_W;
+                end
+            end
+
+            S_LSU_B: begin
+                if (m_b_fire) begin
+                    state_next = S_IDLE;
+                end else begin
+                    state_next = S_LSU_B;
+                end
+            end
+
+            default: begin
+                state_next = S_IDLE;
+            end
+        endcase
+    end
+
+    // =========================================================
+    // State register
+    // =========================================================
     always @(posedge clock or posedge reset) begin
         if (reset) begin
-            state <= IDLE;
+            state <= S_IDLE;
         end else begin
-            case (state)
-                IDLE: begin
-                    if (ifu_arvalid) begin
-                        state <= S_IFU;
-                    end else if (lsu_awvalid) begin
-                        state <= S_LSU_W;
-                    end else if (lsu_arvalid) begin
-                        state <= S_LSU_R;
-                    end
-                end
-
-                S_IFU: begin
-                    // 等待读数据完成（单拍/突发都用 rlast 结束）
-                    if (m_r_fire) begin
-                        state <= IDLE;
-                    end
-                end
-
-                S_LSU_R: begin
-                    if (m_r_fire) begin
-                        // 读完成优先回 IDLE，再由下一拍重新仲裁
-                        state <= IDLE;
-                    end else if (ifu_arvalid) begin
-                        // 允许 IFU 抢占（符合你原来 LSU 状态下 ifu_ar_valid -> IFU）
-                        state <= S_IFU;
-                    end
-                end
-
-                S_LSU_W: begin
-                    // 写完成：看 B 通道
-                    if (m_b_fire) begin
-                        state <= IDLE;
-                    end else if (ifu_arvalid) begin
-                        // 允许 IFU 抢占
-                        state <= S_IFU;
-                    end
-                end
-
-                default: state <= IDLE;
-            endcase
+            state <= state_next;
         end
     end
 
     // =========================================================
-    // 选择当前 master 通道来源
+    // aw_done_r
     // =========================================================
-    wire sel_ifu   = (state == S_IFU);
-    wire sel_lsu_r = (state == S_LSU_R);
-    wire sel_lsu_w = (state == S_LSU_W);
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            aw_done_r <= 1'b0;
+        end else if (state == S_IDLE) begin
+            aw_done_r <= 1'b0;
+        end else if (state == S_LSU_W && m_aw_fire) begin
+            aw_done_r <= 1'b1;
+        end
+    end
 
-    // ---------------- AR ----------------
-    assign m_arvalid = sel_ifu   ? ifu_arvalid :
-                       sel_lsu_r ? lsu_arvalid :
-                       1'b0;
+    // =========================================================
+    // w_done_r
+    // =========================================================
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            w_done_r <= 1'b0;
+        end else if (state == S_IDLE) begin
+            w_done_r <= 1'b0;
+        end else if (state == S_LSU_W && m_w_fire) begin
+            w_done_r <= 1'b1;
+        end
+    end
 
-    assign m_araddr  = sel_ifu   ? ifu_araddr  :
-                       sel_lsu_r ? lsu_araddr  :
-                       {ADDR_WIDTH{1'b0}};
+    // =========================================================
+    // Select signals
+    // =========================================================
+    wire sel_ifu_ar;
+    wire sel_ifu_r;
+    wire sel_lsu_ar;
+    wire sel_lsu_r;
+    wire sel_lsu_w;
+    wire sel_lsu_b;
 
-    assign m_arid    = sel_ifu   ? ifu_arid    :
-                       sel_lsu_r ? lsu_arid    :
-                       4'b0;
+    assign sel_ifu_ar = (state == S_IFU_AR);
+    assign sel_ifu_r  = (state == S_IFU_R);
+    assign sel_lsu_ar = (state == S_LSU_AR);
+    assign sel_lsu_r  = (state == S_LSU_R);
+    assign sel_lsu_w  = (state == S_LSU_W);
+    assign sel_lsu_b  = (state == S_LSU_B);
 
-    assign m_arlen   = sel_ifu   ? ifu_arlen   :
-                       sel_lsu_r ? lsu_arlen   :
-                       8'b0;
+    // =========================================================
+    // AR channel
+    // =========================================================
+    assign m_arvalid =
+        sel_ifu_ar ? ifu_arvalid :
+        sel_lsu_ar ? lsu_arvalid :
+                     1'b0;
 
-    assign m_arsize  = sel_ifu   ? ifu_arsize  :
-                       sel_lsu_r ? lsu_arsize  :
-                       3'b0;
+    assign m_araddr =
+        sel_ifu_ar ? ifu_araddr :
+        sel_lsu_ar ? lsu_araddr :
+                     {ADDR_WIDTH{1'b0}};
 
-    assign m_arburst = sel_ifu   ? ifu_arburst :
-                       sel_lsu_r ? lsu_arburst :
-                       2'b0;
+    assign m_arid =
+        sel_ifu_ar ? ifu_arid :
+        sel_lsu_ar ? lsu_arid :
+                     4'b0000;
 
-    // 对应 ready 回灌
-    assign ifu_arready = sel_ifu   ? m_arready : 1'b0;
-    assign lsu_arready = sel_lsu_r ? m_arready : 1'b0;
+    assign m_arlen =
+        sel_ifu_ar ? ifu_arlen :
+        sel_lsu_ar ? lsu_arlen :
+                     8'b0000_0000;
 
-    // ---------------- R ----------------
-    // master rready 取决于当前选中的发起方
-    assign m_rready = sel_ifu   ? ifu_rready :
-                      sel_lsu_r ? lsu_rready :
-                      1'b0;
+    assign m_arsize =
+        sel_ifu_ar ? ifu_arsize :
+        sel_lsu_ar ? lsu_arsize :
+                     3'b000;
 
-    // IFU / LSU 的 R 输出（只在各自被选中时有效）
-    assign ifu_rvalid = sel_ifu ? m_rvalid : 1'b0;
+    assign m_arburst =
+        sel_ifu_ar ? ifu_arburst :
+        sel_lsu_ar ? lsu_arburst :
+                     2'b00;
+
+    assign ifu_arready = sel_ifu_ar ? m_arready : 1'b0;
+    assign lsu_arready = sel_lsu_ar ? m_arready : 1'b0;
+
+    // =========================================================
+    // R channel
+    //
+    // R 返回必须严格按照 owner 路由。
+    // =========================================================
+    assign m_rready =
+        sel_ifu_r ? ifu_rready :
+        sel_lsu_r ? lsu_rready :
+                    1'b0;
+
+    assign ifu_rvalid = sel_ifu_r ? m_rvalid : 1'b0;
     assign ifu_rdata  = m_rdata;
     assign ifu_rresp  = m_rresp;
     assign ifu_rlast  = m_rlast;
@@ -230,32 +340,34 @@ module ysyx_24110005_Arbiter #(
     assign lsu_rid    = m_rid;
 
     // =========================================================
-    // 写通道：只在 LSU 写状态下驱动 AW/W/B
+    // AW channel
     // =========================================================
-    assign m_awvalid = sel_lsu_w ? lsu_awvalid : 1'b0;
+    assign m_awvalid = sel_lsu_w && !aw_done_r ? lsu_awvalid : 1'b0;
     assign m_awaddr  = sel_lsu_w ? lsu_awaddr  : {ADDR_WIDTH{1'b0}};
-    assign m_awid    = sel_lsu_w ? lsu_awid    : 4'b0;
-    assign m_awlen   = sel_lsu_w ? lsu_awlen   : 8'b0;
-    assign m_awsize  = sel_lsu_w ? lsu_awsize  : 3'b0;
-    assign m_awburst = sel_lsu_w ? lsu_awburst : 2'b0;
+    assign m_awid    = sel_lsu_w ? lsu_awid    : 4'b0000;
+    assign m_awlen   = sel_lsu_w ? lsu_awlen   : 8'b0000_0000;
+    assign m_awsize  = sel_lsu_w ? lsu_awsize  : 3'b000;
+    assign m_awburst = sel_lsu_w ? lsu_awburst : 2'b00;
 
-    assign lsu_awready = sel_lsu_w ? m_awready : 1'b0;
+    assign lsu_awready = sel_lsu_w && !aw_done_r ? m_awready : 1'b0;
 
-    assign m_wvalid = sel_lsu_w ? lsu_wvalid : 1'b0;
+    // =========================================================
+    // W channel
+    // =========================================================
+    assign m_wvalid = sel_lsu_w && !w_done_r ? lsu_wvalid : 1'b0;
     assign m_wdata  = sel_lsu_w ? lsu_wdata  : {DATA_WIDTH{1'b0}};
-    assign m_wstrb  = sel_lsu_w ? lsu_wstrb  : 4'b0;
+    assign m_wstrb  = sel_lsu_w ? lsu_wstrb  : 4'b0000;
     assign m_wlast  = sel_lsu_w ? lsu_wlast  : 1'b0;
 
-    assign lsu_wready = sel_lsu_w ? m_wready : 1'b0;
+    assign lsu_wready = sel_lsu_w && !w_done_r ? m_wready : 1'b0;
 
-    // B：master bready 由 LSU 决定
-    assign m_bready = sel_lsu_w ? lsu_bready : 1'b0;
+    // =========================================================
+    // B channel
+    // =========================================================
+    assign m_bready = sel_lsu_b ? lsu_bready : 1'b0;
 
-    assign lsu_bvalid = sel_lsu_w ? m_bvalid : 1'b0;
+    assign lsu_bvalid = sel_lsu_b ? m_bvalid : 1'b0;
     assign lsu_bresp  = m_bresp;
     assign lsu_bid    = m_bid;
-
-    // “完成信号”给你顶层推进 PC（沿用你之前的 all_bresp 思路）
-    //assign o_bresp_done = m_bvalid && m_bready;
 
 endmodule

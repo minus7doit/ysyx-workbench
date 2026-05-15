@@ -1,185 +1,284 @@
 module ysyx_24110005_Decoder #(
-   parameter DATA_WIDTH=32, 
-   parameter REG_ADDR_WIDTH=5,
-   parameter OP_WIDTH=7,
-   parameter FUN_WIDTH=3
-) (    
-    input   clock,
-    input   reset,
-    input  [DATA_WIDTH-1:0]inst,
-    input   fetch_dec_valid,
-    output  fetch_dec_ready, 
-    output [REG_ADDR_WIDTH-1:0]r_addr1,
-    output [REG_ADDR_WIDTH-1:0]r_addr2,
-    output [REG_ADDR_WIDTH-1:0]dec_exc_waddr,
-    output [DATA_WIDTH-1:0]dec_exc_imm,
-    output [FUN_WIDTH-1:0]dec_exc_fun,
-    output [OP_WIDTH-1:0]dec_exc_opcode,
-    output mem_ar_valid,
-    input  mem_ar_ready,
+    parameter DATA_WIDTH     = 32,
+    parameter REG_ADDR_WIDTH = 5,
+    parameter OP_WIDTH       = 7,
+    parameter FUN_WIDTH      = 3
+)(
+    input  wire [DATA_WIDTH-1:0] inst,
 
-    output dec_exc_valid,
-    input  dec_exc_ready
+    output wire [REG_ADDR_WIDTH-1:0] rs1,
+    output wire [REG_ADDR_WIDTH-1:0] rs2,
+    output wire [REG_ADDR_WIDTH-1:0] rd,
+
+    output reg  [DATA_WIDTH-1:0] imm,
+
+    output wire [OP_WIDTH-1:0]   opcode,
+    output wire [FUN_WIDTH-1:0]  funct3,
+    output wire [6:0]            funct7,
+
+    output wire                  use_rs1,
+    output wire                  use_rs2,
+
+    output wire                  reg_wen,
+    output wire                  mem_read,
+    output wire                  mem_write,
+
+    output wire                  branch,
+    output wire                  jump,
+    output wire                  csr,
+
+    output wire                  ecall,
+    output wire                  ebreak,
+    output wire                  mret,
+    output wire                  fencei,
+
+    output wire                  csr_imm_sel,
+    output wire [DATA_WIDTH-1:0] csr_zimm,
+
+    output reg  [1:0]            wb_sel,
+
+    output wire                  illegal_inst
 );
-parameter TYPE_NUM=9;
-parameter TYPE_WIDTH=7;
-parameter TYPE_I0=7'b0000011;
-parameter TYPE_I1=7'b0010011;
-//parameter TYPE_I2=7'b1100111;
-parameter TYPE_CSR=7'b1110011;
-parameter TYPE_B=7'b1100011;
-parameter TYPE_J=7'b1101111;
-parameter TYPE_S=7'b0100011;
-parameter TYPE_U0=7'b0110111;
-parameter TYPE_U1=7'b0010111;
-parameter TYPE_R=7'b0110011;
 
-parameter STATE_ID=2'b01;
-parameter STATE_OUTPUT=2'b10;
-parameter STATE_LOAD_DATA=2'b11;
+    // ============================================================
+    // opcode
+    // ============================================================
+    localparam TYPE_I0  = 7'b0000011;  // load
+    localparam TYPE_I1  = 7'b0010011;  // op-imm
+    localparam TYPE_I2  = 7'b1100111;  // jalr
+    localparam TYPE_CSR = 7'b1110011;  // system / csr
+    localparam TYPE_B   = 7'b1100011;  // branch
+    localparam TYPE_J   = 7'b1101111;  // jal
+    localparam TYPE_S   = 7'b0100011;  // store
+    localparam TYPE_U0  = 7'b0110111;  // lui
+    localparam TYPE_U1  = 7'b0010111;  // auipc
+    localparam TYPE_R   = 7'b0110011;  // op
 
-//专门用来写寄存器的；和S型指令直接写进地址还不太一样
-//根据指令类型取出立即数
-reg [FUN_WIDTH-1: 0]r_fun;
-reg [OP_WIDTH-1:0]r_opcode;
-reg [REG_ADDR_WIDTH-1:0] r_waddr;
-reg [DATA_WIDTH-1:0]r_imm;
+    // ============================================================
+    // csr/system imm
+    // ============================================================
+    localparam CSR_ECALL = 12'h000;
+    localparam CSR_EBREAK= 12'h001;
+    localparam CSR_MRET  = 12'h302;
 
-wire [FUN_WIDTH-1: 0]fun;
-wire [OP_WIDTH-1:0]opcode;
-wire [REG_ADDR_WIDTH-1:0] w_addr;
-wire [DATA_WIDTH-1:0]imm;
-wire mem_load_en;
-reg [1:0] id_state;
+    // ============================================================
+    // write back select
+    // ============================================================
+    localparam WB_ALU = 2'b00;
+    localparam WB_MEM = 2'b01;
+    localparam WB_PC4 = 2'b10;
+    localparam WB_CSR = 2'b11;
 
-always @(posedge clock or posedge reset) begin
-    if(reset)begin
-        id_state<=STATE_ID;
-    end
-    else begin
-        case (id_state)
-            STATE_ID:begin
-            if(fetch_dec_valid&&fetch_dec_ready)begin
-                if (mem_load_en) begin
-                    id_state<=STATE_LOAD_DATA;
-                end
-                else begin
-                    id_state<=STATE_OUTPUT;
-                end
+    // ============================================================
+    // basic fields
+    // ============================================================
+    assign opcode = inst[6:0];
+    assign rd     = inst[11:7];
+    assign funct3 = inst[14:12];
+    assign rs1    = inst[19:15];
+    assign rs2    = inst[24:20];
+    assign funct7 = inst[31:25];
+
+    wire [11:0] csr_addr;
+    assign csr_addr = inst[31:20];
+
+    // ============================================================
+    // instruction type decode
+    // ============================================================
+    wire is_load;
+    wire is_store;
+    wire is_opimm;
+    wire is_op;
+    wire is_branch;
+    wire is_jal;
+    wire is_jalr;
+    wire is_lui;
+    wire is_auipc;
+    wire is_system;
+
+    assign is_load   = (opcode == TYPE_I0);
+    assign is_store  = (opcode == TYPE_S);
+    assign is_opimm  = (opcode == TYPE_I1);
+    assign is_op     = (opcode == TYPE_R);
+    assign is_branch = (opcode == TYPE_B);
+    assign is_jal    = (opcode == TYPE_J);
+    assign is_jalr   = (opcode == TYPE_I2);
+    assign is_lui    = (opcode == TYPE_U0);
+    assign is_auipc  = (opcode == TYPE_U1);
+    assign is_system = (opcode == TYPE_CSR);
+
+    // ============================================================
+    // system instruction decode
+    // ============================================================
+    assign ecall  = is_system && (funct3 == 3'b000) && (csr_addr == CSR_ECALL);
+    assign ebreak = is_system && (funct3 == 3'b000) && (csr_addr == CSR_EBREAK);
+    assign mret   = is_system && (funct3 == 3'b000) && (csr_addr == CSR_MRET);
+
+    // fence.i:
+    // opcode = 0001111, funct3 = 001
+    assign fencei = (opcode == 7'b0001111) && (funct3 == 3'b001);
+
+    // CSR read/write instruction:
+    // funct3 != 000 means CSRRW/CSRRS/CSRRC/CSRRWI/CSRRSI/CSRRCI
+    wire is_csr_inst;
+    assign is_csr_inst = is_system && (funct3 != 3'b000);
+
+    assign csr = is_csr_inst;
+
+    // CSR immediate instruction:
+    // CSRRWI/CSRRSI/CSRRCI: funct3[2] = 1
+    assign csr_imm_sel = is_csr_inst && funct3[2];
+
+    // zimm = inst[19:15], zero extend
+    assign csr_zimm = {27'b0, inst[19:15]};
+
+    // ============================================================
+    // immediate generation
+    // ============================================================
+    always @(*) begin
+        case (opcode)
+            TYPE_U0: begin
+                // lui
+                imm = {inst[31:12], 12'b0};
             end
+
+            TYPE_U1: begin
+                // auipc
+                imm = {inst[31:12], 12'b0};
             end
-            STATE_LOAD_DATA:begin
-            if(mem_ar_ready&&mem_ar_valid)
-                id_state<=STATE_OUTPUT;
+
+            TYPE_I0: begin
+                // load
+                imm = {{20{inst[31]}}, inst[31:20]};
             end
-            STATE_OUTPUT:begin
-            if(dec_exc_ready&&dec_exc_valid)
-                id_state<=STATE_ID;
+
+            TYPE_I1: begin
+                // op-imm
+                imm = {{20{inst[31]}}, inst[31:20]};
             end
-            default: id_state<=STATE_ID;
+
+            TYPE_I2: begin
+                // jalr
+                imm = {{20{inst[31]}}, inst[31:20]};
+            end
+
+            TYPE_CSR: begin
+                // csr addr / ecall / ebreak / mret
+                // 注意：这里给 zero-extend 更干净，真正地址只看 imm[11:0]
+                imm = {20'b0, inst[31:20]};
+            end
+
+            TYPE_B: begin
+                // branch immediate
+                imm = {{19{inst[31]}}, inst[31], inst[7],
+                       inst[30:25], inst[11:8], 1'b0};
+            end
+
+            TYPE_J: begin
+                // jal immediate
+                imm = {{11{inst[31]}}, inst[31], inst[19:12],
+                       inst[20], inst[30:21], 1'b0};
+            end
+
+            TYPE_S: begin
+                // store immediate
+                imm = {{20{inst[31]}}, inst[31:25], inst[11:7]};
+            end
+
+            TYPE_R: begin
+                // R-type has no imm, but keep funct7 in low bits for old ALU style
+                imm = {25'b0, inst[31:25]};
+            end
+
+            default: begin
+                imm = 32'b0;
+            end
         endcase
     end
-end
 
+    // ============================================================
+    // memory control
+    // ============================================================
+    assign mem_read  = is_load;
+    assign mem_write = is_store;
 
+    // ============================================================
+    // branch / jump
+    // ============================================================
+    assign branch = is_branch;
+    assign jump   = is_jal | is_jalr;
 
-assign fetch_dec_ready =(id_state==STATE_ID);
-assign dec_exc_valid  = (id_state==STATE_OUTPUT);
+    // ============================================================
+    // register usage
+    //
+    // 用于 RAW hazard 检测：
+    //   ID 阶段判断当前指令是否真的读取 rs1 / rs2
+    // ============================================================
+    assign use_rs1 =
+        is_load   ||
+        is_store  ||
+        is_opimm  ||
+        is_op     ||
+        is_branch ||
+        is_jalr   ||
+        (is_csr_inst && !csr_imm_sel);
 
-assign opcode=inst[OP_WIDTH-1:0];
-assign fun=inst[14:12];//选择同一类型指令的其中一条指令
-assign r_addr1=inst[19:15];//寄存器地址1
-assign r_addr2=inst[24:20];//寄存器地址2
-assign w_addr= inst[11:7];//目标寄存器地址
+    assign use_rs2 =
+        is_store ||
+        is_op    ||
+        is_branch;
 
-ysyx_24110005_MuxKeyWithDefault #(
-    .NR_KEY(TYPE_NUM),
-    .KEY_LEN(TYPE_WIDTH),
-    .DATA_LEN(DATA_WIDTH)) 
-imm_mux (
-    .out        (imm   ),
-    .key        (opcode),
-    .default_out(32'b0 ),
-    .lut({TYPE_U0,{inst[31:12],12'b0},
-    TYPE_U1,{inst[31:12],12'b0},
-    TYPE_I0,{{20{inst[31]}},inst[31:20]},
-    TYPE_I1,{{20{inst[31]}},inst[31:20]},
-    TYPE_CSR,{{20{inst[31]}},inst[31:20]},
-    TYPE_B,{{19{inst[31]}},inst[31],inst[7],inst[30:25],inst[11:8],1'b0},
-    TYPE_J,{{11{inst[31]}},inst[31],inst[19:12],inst[20],inst[30:21],1'b0},
-    TYPE_S,{{20{inst[31]}},inst[31:25],inst[11:7]},
-    TYPE_R,{25'b0,inst[31:25]}
-    })
-);
+    // ============================================================
+    // register write enable
+    //
+    // 注意：
+    //   ecall / ebreak / mret 不写 rd
+    //   branch / store / fence.i 不写 rd
+    // ============================================================
+    assign reg_wen =
+        is_load     ||
+        is_opimm    ||
+        is_op       ||
+        is_lui      ||
+        is_auipc    ||
+        is_jal      ||
+        is_jalr     ||
+        is_csr_inst;
 
-always @(posedge clock or posedge reset) begin
-    if(reset)begin
-        r_waddr<={REG_ADDR_WIDTH{1'b0}};
-    end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            r_waddr<=w_addr;
-        end
-        else begin
-            r_waddr<=r_waddr;
-        end
-    end
-end
+    // ============================================================
+    // writeback select
+    // ============================================================
+    always @(*) begin
+        wb_sel = WB_ALU;
 
-always @(posedge clock or posedge reset) begin
-    if(reset)begin
-        r_imm<={DATA_WIDTH{1'b0}};
-    end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            r_imm<=imm;
-        end
-        else begin
-            r_imm<=r_imm;
-        end
-    end
-end
-
-always @(posedge clock or posedge reset) begin
-    if(reset)begin     
-        r_opcode<={OP_WIDTH{1'b0}};
-    end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            r_opcode<=opcode;
-        end
-        else begin
-            r_opcode<=r_opcode;
+        if (is_load) begin
+            wb_sel = WB_MEM;
+        end else if (is_jal || is_jalr) begin
+            wb_sel = WB_PC4;
+        end else if (is_csr_inst) begin
+            wb_sel = WB_CSR;
+        end else begin
+            wb_sel = WB_ALU;
         end
     end
-end
 
-always @(posedge clock or posedge reset) begin
-    if(reset)begin     
-        r_fun<={FUN_WIDTH{1'b0}};
-    end
-    else begin
-        if(fetch_dec_valid&&fetch_dec_ready)begin
-            r_fun<=fun;
-        end
-        else begin
-            r_fun<=r_fun;
-        end
-    end
-end
-
-assign dec_exc_waddr=r_waddr;
-assign dec_exc_imm=r_imm;
-assign dec_exc_opcode=r_opcode;
-assign dec_exc_fun=r_fun;
-
-assign mem_load_en=(opcode==TYPE_I0);
-assign mem_ar_valid= (id_state==STATE_LOAD_DATA);
+    // ============================================================
+    // illegal instruction simple check
+    //
+    // 第一版可以先简单判断 opcode 是否支持。
+    // 更严格的 funct3/funct7 合法性可以后面再补。
+    // ============================================================
+    assign illegal_inst =
+        !(is_load   ||
+          is_store  ||
+          is_opimm  ||
+          is_op     ||
+          is_branch ||
+          is_jal    ||
+          is_jalr   ||
+          is_lui    ||
+          is_auipc  ||
+          is_system ||
+          fencei);
 
 endmodule
-
-
-// Author: minus7
-// Date: 2024-11-20
-// Version: 1.0
-// Filename: Inst_Decoder.v

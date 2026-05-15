@@ -5,15 +5,15 @@ module ysyx_24110005_ifu #(
     input                    clock,
     input                    reset,
 
-    // core side
-    input   [DATA_WIDTH-1:0] i_pc,
-    input                    i_ifu_dec_ready,
-    input                    if_bresp,
+    input                    i_fetch_allow,
+    input                    i_id_ready,
+    input   [ADDR_WIDTH-1:0] i_fetch_pc,
+    input                    i_flush,
 
-    output  [DATA_WIDTH-1:0] o_current_inst,
-    output                   o_ifu_dec_r_valid,
+    output                   o_inst_valid,
+    output  [DATA_WIDTH-1:0] o_inst,
+    output  [ADDR_WIDTH-1:0] o_inst_pc,
 
-    // ================= AXI4 Read Address (AR) =================
     output                   o_ifu_arvalid,
     input                    i_ifu_arready,
     output  [ADDR_WIDTH-1:0] o_ifu_araddr,
@@ -22,82 +22,177 @@ module ysyx_24110005_ifu #(
     output  [2:0]            o_ifu_arsize,
     output  [1:0]            o_ifu_arburst,
 
-    // ================= AXI4 Read Data (R) =================
     output                   o_ifu_rready,
     input                    i_ifu_rvalid,
     input   [DATA_WIDTH-1:0] i_ifu_rdata,
-    input   [1:0]            i_ifu_rresp,
-    input                    i_ifu_rlast,
-    input   [3:0]            i_ifu_rid
+    input                    i_ifu_rlast
 );
 
-  // ------------------------------------------------------------
-  // 原 IFU 的最小逻辑：只控制 ar_valid
-  // ------------------------------------------------------------
-  reg r_ifu_ar_valid;
+    // ============================================================
+    // AR request register
+    // ============================================================
+    reg                  arvalid_r;
+    reg [ADDR_WIDTH-1:0] araddr_r;
 
-  always @(posedge clock or posedge reset) begin
-    if (reset) begin
-      r_ifu_ar_valid <= 1'b1;
-    end else begin
-      if (if_bresp) begin
-        r_ifu_ar_valid <= 1'b1;
-      end else if (o_ifu_arvalid && i_ifu_arready) begin
-        r_ifu_ar_valid <= 1'b0;
-      end else begin
-        r_ifu_ar_valid <= r_ifu_ar_valid;
-      end
+    // ============================================================
+    // outstanding request
+    // ============================================================
+    reg                  req_outstanding;
+    reg [ADDR_WIDTH-1:0] req_pc;
+
+    // ============================================================
+    // one-entry instruction buffer
+    // ============================================================
+    reg                  buf_valid;
+    reg [DATA_WIDTH-1:0] buf_inst;
+    reg [ADDR_WIDTH-1:0] buf_pc;
+
+    // ============================================================
+    // handshake
+    // ============================================================
+    wire ar_fire;
+    wire r_fire;
+    wire id_fire;
+
+    assign ar_fire = o_ifu_arvalid && i_ifu_arready;
+    assign r_fire  = o_ifu_rready  && i_ifu_rvalid && i_ifu_rlast;
+    assign id_fire = buf_valid && i_id_ready;
+
+    // ============================================================
+    // start fetch
+    //
+    // 注意：
+    //   flush 当拍不发请求；
+    //   flush 后下一拍 fetch_pc 已经变成 redirect_pc，
+    //   此时允许重新取指。
+    // ============================================================
+    wire start_fetch;
+
+    assign start_fetch =
+        i_fetch_allow    &&
+        !i_flush         &&
+        !arvalid_r       &&
+        !req_outstanding &&
+        !buf_valid;
+
+    // ============================================================
+    // ARVALID / ARADDR
+    //
+    // ARADDR 锁存，避免 ARVALID=1 && ARREADY=0 时地址变化。
+    // ============================================================
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            arvalid_r <= 1'b0;
+        end else if (i_flush) begin
+            // flush 直接取消尚未握手的 AR 请求
+            arvalid_r <= 1'b0;
+        end else if (start_fetch) begin
+            arvalid_r <= 1'b1;
+        end else if (ar_fire) begin
+            arvalid_r <= 1'b0;
+        end
     end
-  end
 
-  reg [DATA_WIDTH-1:0]r_cur_inst;
-  reg r_ifu_dec_rvalid;
-  always @(posedge clock or posedge reset) begin
-    if (reset) begin
-      r_cur_inst <= 32'b0;
-    end else begin
-      if (i_ifu_rvalid) 
-        r_cur_inst <= i_ifu_rdata;
-      else 
-        r_cur_inst <= r_cur_inst;
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            araddr_r <= {ADDR_WIDTH{1'b0}};
+        end else if (start_fetch) begin
+            araddr_r <= i_fetch_pc;
+        end
     end
-  end
-  always @(posedge clock or posedge reset) begin
-    if (reset) begin
-      r_ifu_dec_rvalid <= 1'b0;
-    end else begin
-      if (i_ifu_rvalid) 
-        r_ifu_dec_rvalid <= 1'b1;
-      else
-        r_ifu_dec_rvalid <= 1'b0; 
+
+    // ============================================================
+    // req_outstanding
+    //
+    // 关键修复：
+    //   flush 时直接清掉 outstanding。
+    //
+    // 原因：
+    //   你当前 ICache flush 后可能不会返回旧请求的 rvalid，
+    //   所以 IFU 不能继续等旧请求 r_fire。
+    // ============================================================
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            req_outstanding <= 1'b0;
+        end else if (i_flush) begin
+            req_outstanding <= 1'b0;
+        end else if (ar_fire) begin
+            req_outstanding <= 1'b1;
+        end else if (r_fire) begin
+            req_outstanding <= 1'b0;
+        end
     end
-  end
-  // ------------------------------------------------------------
-  // AXI4 AR：地址 = PC，其余字段给默认“单拍读”
-  // ------------------------------------------------------------
-  assign o_ifu_arvalid = r_ifu_ar_valid;
-  assign o_ifu_araddr  = i_pc;
 
-  // 多出来的输出端口：给固定合法值（等价“置默认/置0”）
-  assign o_ifu_arid    = 4'd0;
-  assign o_ifu_arlen   = 8'd0;       // 1 beat
-  assign o_ifu_arsize  = 3'd2;       // 4 bytes (2^2)
-  assign o_ifu_arburst = 2'b01;      // INCR
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            req_pc <= {ADDR_WIDTH{1'b0}};
+        end else if (ar_fire) begin
+            req_pc <= araddr_r;
+        end
+    end
 
-  // ------------------------------------------------------------
-  // AXI4 R：只用 rvalid + rdata，其他输入悬空（不使用）
-  // ------------------------------------------------------------
-  assign o_ifu_rready      = i_ifu_dec_ready;
-  assign o_current_inst    = r_cur_inst;
-  assign o_ifu_dec_r_valid = r_ifu_dec_rvalid;
+    // ============================================================
+    // instruction buffer valid
+    //
+    // flush 时清空 buffer。
+    // 如果 flush 后 ICache 仍然返回旧数据，因为 i_flush 优先级更高，
+    // 本拍不会接收为有效指令。
+    // ============================================================
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            buf_valid <= 1'b0;
+        end else if (i_flush) begin
+            buf_valid <= 1'b0;
+        end else if (r_fire) begin
+            buf_valid <= 1'b1;
+        end else if (id_fire) begin
+            buf_valid <= 1'b0;
+        end
+    end
 
-  // ------------------------------------------------------------
-  // 多余输入端口悬空：避免 Verilator UNUSED 警告（可选）
-  // ------------------------------------------------------------
-  /* verilator lint_off UNUSED */
-  wire [1:0] _unused_rresp = i_ifu_rresp;
-  wire       _unused_rlast = i_ifu_rlast;
-  wire [3:0] _unused_rid   = i_ifu_rid;
-  /* verilator lint_on UNUSED */
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            buf_inst <= {DATA_WIDTH{1'b0}};
+        end else if (!i_flush && r_fire) begin
+            buf_inst <= i_ifu_rdata;
+        end
+    end
+
+    always @(posedge clock or posedge reset) begin
+        if (reset) begin
+            buf_pc <= {ADDR_WIDTH{1'b0}};
+        end else if (!i_flush && r_fire) begin
+            buf_pc <= req_pc;
+        end
+    end
+
+    // ============================================================
+    // AXI AR
+    //
+    // 这里 o_ifu_arvalid 再额外与 !i_flush 相与，
+    // 防止 flush 当拍 ICache 接收旧路径 AR。
+    // ============================================================
+    assign o_ifu_arvalid = arvalid_r && !i_flush;
+    assign o_ifu_araddr  = araddr_r;
+
+    assign o_ifu_arid    = 4'd0;
+    assign o_ifu_arlen   = 8'd0;
+    assign o_ifu_arsize  = 3'd2;
+    assign o_ifu_arburst = 2'b01;
+
+    // ============================================================
+    // AXI R
+    //
+    // 始终 ready。
+    // 如果 flush 期间旧数据返回，会被上面的 buffer 逻辑丢掉。
+    // ============================================================
+    assign o_ifu_rready = 1'b1;
+
+    // ============================================================
+    // IFU -> ID
+    // ============================================================
+    assign o_inst_valid = buf_valid;
+    assign o_inst       = buf_inst;
+    assign o_inst_pc    = buf_pc;
 
 endmodule

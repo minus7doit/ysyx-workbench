@@ -22,7 +22,7 @@
 #define MTRACE 0
 #define WAVE 0
 #define CONFIG_DEVICE 0
-#define CONFIG_NVBOARD 1
+#define CONFIG_NVBOARD 0
 #if CONFIG_NVBOARD
 #include <nvboard.h>
 #endif
